@@ -1,4 +1,4 @@
-QT       += core gui charts
+QT       += core gui charts network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -10,8 +10,10 @@ CONFIG += c++17
 
 SOURCES += \
     arxwindow.cpp \
+    client.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    server.cpp
 
 HEADERS += \
     GeneratorSygnalu.h \
@@ -19,9 +21,12 @@ HEADERS += \
     ModelARX.h \
     ProstyUAR.h \
     RegulatorPID.h \
+    StepPacket.h \
     Symulator.h \
     arxwindow.h \
-    mainwindow.h
+    client.h \
+    mainwindow.h \
+    server.h
 
 FORMS += \
     arxwindow.ui \
