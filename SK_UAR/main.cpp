@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     qDebug() << "Twój wybór:";
 
     QString wybor = cin.readLine().trimmed();
-    wybor = "1";
+    wybor = "2";
 
     if (wybor == "1")
     {
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     else if (wybor == "2")
     {
         qDebug() << "Uruchamiam tryb KLIENTA...";
-        Client* client = new Client("127.0.0.1", 5000);
+        Client* client = new Client("10.0.0.30", 5000);
 
         // Twój symulator
         SymulatorUAR* sym = new SymulatorUAR(
