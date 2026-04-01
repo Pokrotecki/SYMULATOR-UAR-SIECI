@@ -5,10 +5,12 @@ Client::Client(const QString& host, quint16 port, QObject* parent)
     : QObject(parent)
 {
     connect(&socket, &QTcpSocket::readyRead, this, &Client::onReadyRead);
-    connect(&socket, &QTcpSocket::connected, [](){
+    connect(&socket, &QTcpSocket::connected, []()
+    {
         qDebug() << "KLIENT: Połączono z serwerem!";
     });
-    connect(&socket, &QTcpSocket::errorOccurred, [](QAbstractSocket::SocketError err){
+    connect(&socket, &QTcpSocket::errorOccurred, [](QAbstractSocket::SocketError err)
+    {
         qDebug() << "KLIENT: Błąd połączenia:" << err;
     });
     socket.connectToHost(host, port);
