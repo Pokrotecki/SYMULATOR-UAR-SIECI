@@ -6,7 +6,7 @@
 #include "client.h"
 #include "Symulator.h"
 #include <QApplication>
-/*
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
@@ -15,8 +15,8 @@ int main(int argc, char *argv[])
     w.show();
     return a.exec();
 }
-*/
 
+/*
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
@@ -57,3 +57,4 @@ int main(int argc, char *argv[])
 
     return app.exec();
 }
+*/

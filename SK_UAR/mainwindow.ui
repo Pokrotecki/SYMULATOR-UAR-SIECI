@@ -205,6 +205,25 @@
              </item>
             </layout>
            </item>
+           <item>
+            <widget class="QPushButton" name="TrybSieciowy_Button">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>100</horstretch>
+               <verstretch>10</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>478</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>TRYB SIECIOWY</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>

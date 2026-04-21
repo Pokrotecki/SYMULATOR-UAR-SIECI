@@ -55,6 +55,7 @@ public:
     QPushButton *Zapisz_Button;
     QLabel *label;
     QDoubleSpinBox *spinBOX_Interwal;
+    QPushButton *TrybSieciowy_Button;
     QHBoxLayout *horizontalLayout_17;
     QGroupBox *groupBox;
     QVBoxLayout *verticalLayout_6;
@@ -217,6 +218,17 @@ public:
 
 
         verticalLayout_10->addLayout(horizontalLayout_10);
+
+        TrybSieciowy_Button = new QPushButton(groupBox_4);
+        TrybSieciowy_Button->setObjectName("TrybSieciowy_Button");
+        QSizePolicy sizePolicy(QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Fixed);
+        sizePolicy.setHorizontalStretch(100);
+        sizePolicy.setVerticalStretch(10);
+        sizePolicy.setHeightForWidth(TrybSieciowy_Button->sizePolicy().hasHeightForWidth());
+        TrybSieciowy_Button->setSizePolicy(sizePolicy);
+        TrybSieciowy_Button->setMinimumSize(QSize(478, 24));
+
+        verticalLayout_10->addWidget(TrybSieciowy_Button);
 
 
         verticalLayout_9->addWidget(groupBox_4);
@@ -498,6 +510,7 @@ public:
         Wczytaj_Button->setText(QCoreApplication::translate("MainWindow", "Wczytaj", nullptr));
         Zapisz_Button->setText(QCoreApplication::translate("MainWindow", "Zapisz", nullptr));
         label->setText(QCoreApplication::translate("MainWindow", "Interwa\305\202[ms]", nullptr));
+        TrybSieciowy_Button->setText(QCoreApplication::translate("MainWindow", "TRYB SIECIOWY", nullptr));
         groupBox->setTitle(QCoreApplication::translate("MainWindow", "sygna\305\202", nullptr));
         Sin_Button->setText(QCoreApplication::translate("MainWindow", "sinus", nullptr));
         Square_Button->setText(QCoreApplication::translate("MainWindow", "square", nullptr));

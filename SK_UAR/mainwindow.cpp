@@ -30,6 +30,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     this->showMaximized();
 
+    Tryb = lokalny;
+
     on_spinBOX_WzmocK_editingFinished();
     on_spinBOX_Amplituda_editingFinished();
     on_spinBOX_Czstotliwosc_editingFinished();
@@ -38,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
     on_spinBOX_Interwal_editingFinished();
     on_spinBox_Wypelnienie_editingFinished();
     on_SpinBox_Stala_editingFinished();
+    //on_TrybSieciowy_Button_clicked();
 
     doceloweOknoCzasowe = ui->spinBoxOknoczasowe->value();
     aktualnaSzerokoscOkna = doceloweOknoCzasowe;
@@ -574,3 +577,132 @@ void MainWindow::on_Wczytaj_Button_clicked()
 
 }
 
+
+void MainWindow::on_TrybSieciowy_Button_clicked()
+{
+    if(Tryb == lokalny)
+    {
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Wybór trybu");
+    msgBox.setText("Wybierz tryb pracy aplikacji:");
+
+    QPushButton* btnObiekt = msgBox.addButton("Tryb obiektu", QMessageBox::AcceptRole);
+    QPushButton* btnRegulator = msgBox.addButton("Tryb regulatora", QMessageBox::AcceptRole);
+    QPushButton* btnAnuluj = msgBox.addButton("Anuluj", QMessageBox::RejectRole);
+
+    msgBox.exec();
+
+    if (msgBox.clickedButton() == btnObiekt)
+    {
+        qDebug() << "Wybrano tryb obiektu";
+        trybObiektu();
+    }
+    else if (msgBox.clickedButton() == btnRegulator)
+    {
+        qDebug() << "Wybrano tryb regulatora";
+        trybRegulatora();
+    }
+    else
+    {
+        qDebug() << "Anulowano wybór";
+    }
+    }
+    else
+    {
+        QMessageBox msgBox;
+        msgBox.setWindowTitle("Wybór trybu");
+        msgBox.setText("Powrót do trybu lokalnego?");
+
+        QPushButton* btnZatwierdz = msgBox.addButton("Zatwierdź", QMessageBox::AcceptRole);
+        QPushButton* btnAnuluj = msgBox.addButton("Anuluj", QMessageBox::RejectRole);
+
+        msgBox.exec();
+
+        if (msgBox.clickedButton() == btnZatwierdz)
+        {
+            qDebug() << "Powrót do trybu lokalnego";
+            trybLokalny();
+        }
+        else
+        {
+            qDebug() << "Anulowano wybór";
+        }
+    }
+}
+
+void MainWindow::trybLokalny()
+{
+    Tryb = lokalny;
+    ui->TrybSieciowy_Button->setText("TRYB SIECIOWY");
+    ui->RESET_Button->setEnabled(true);
+    ui->Konf_ARX_Button->setEnabled(true);
+    ui->START_Button->setEnabled(true);
+    ui->RESET_Button->setEnabled(true);
+    ui->Square_Button->setEnabled(true);
+    ui->Sin_Button->setEnabled(true);
+    ui->Zapisz_Button->setEnabled(true);
+    ui->Wczytaj_Button->setEnabled(true);
+    ui->STOP_Bttun->setEnabled(true);
+    ui->Reset_d->setEnabled(true);
+    ui->Reset_i->setEnabled(true);
+    ui->SpinBox_Stala->setEnabled(true);
+    ui->spinBOX_Amplituda->setEnabled(true);
+    ui->spinBOX_Czstotliwosc->setEnabled(true);
+    ui->spinBOX_Interwal->setEnabled(true);
+    ui->spinBOX_Td->setEnabled(true);
+    ui->spinBOX_Ti->setEnabled(true);
+    ui->spinBOX_WzmocK->setEnabled(true);
+    ui->spinBoxOknoczasowe->setEnabled(true);
+    ui->spinBox_Wypelnienie->setEnabled(true);
+    ui->radio_pod->setEnabled(true);
+    ui->radio_przed->setEnabled(true);
+}
+
+void MainWindow::trybRegulatora()
+{
+    Tryb = regulator;
+    ui->Konf_ARX_Button->setEnabled(false);
+    ui->TrybSieciowy_Button->setText("Powrot do trybu lokalnego");
+}
+
+void MainWindow::trybObiektu()
+{
+    Tryb = obiekt;
+    ui->TrybSieciowy_Button->setText("Powrot do trybu lokalnego");
+    ui->RESET_Button->setEnabled(false);
+    ui->Konf_ARX_Button->setEnabled(false);
+    ui->START_Button->setEnabled(false);
+    ui->RESET_Button->setEnabled(false);
+    ui->Square_Button->setEnabled(false);
+    ui->Sin_Button->setEnabled(false);
+    ui->Zapisz_Button->setEnabled(false);
+    ui->Wczytaj_Button->setEnabled(false);
+    ui->STOP_Bttun->setEnabled(false);
+    ui->Reset_d->setEnabled(false);
+    ui->Reset_i->setEnabled(false);
+    ui->SpinBox_Stala->setEnabled(false);
+    ui->spinBOX_Amplituda->setEnabled(false);
+    ui->spinBOX_Czstotliwosc->setEnabled(false);
+    ui->spinBOX_Interwal->setEnabled(false);
+    ui->spinBOX_Td->setEnabled(false);
+    ui->spinBOX_Ti->setEnabled(false);
+    ui->spinBOX_WzmocK->setEnabled(false);
+    ui->spinBoxOknoczasowe->setEnabled(false);
+    ui->spinBox_Wypelnienie->setEnabled(false);
+    ui->radio_pod->setEnabled(false);
+    ui->radio_przed->setEnabled(false);
+}
+
+/*
+ * MASZ TU WKLEJKE KTORA TRZEBA DODAC DO KONTROLEK JAK ZROBISZ PRZESYL KONFIGURACJI
+
+if (Tryb == obiekt)
+{
+    //tutaj funkcja odbierajaca dane
+}
+else if (Tryb == regulator)
+{
+    //tutaj funkcja przesylajaca dane
+}
+
+*/

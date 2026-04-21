@@ -61,11 +61,22 @@ private slots:
     //  Główny slot odbierający dane z symulatora
     void onKrokWykonany(double w, double y, double e, double u, int k, double P, double I, double D);
 
+    void on_TrybSieciowy_Button_clicked();
+
 private:
     Ui::MainWindow *ui;
     MenedzerKonfiguracji menedzerKonfig;
     ARXwindow *arxwindow = nullptr;
     SymulatorUAR symulator;
+
+    // Tryby aplikacji
+    enum tryb
+    {
+        lokalny,
+        obiekt,
+        regulator
+    };
+    tryb Tryb;
 
     //  Wykresy i Serie
     QLineSeries *seriaP;
@@ -111,6 +122,11 @@ private:
 
     void aktualizujZakresOsiX(double krokAnimacji, double wymaganeOkno, double aktualnyCzas);
     void czyscStareDane(double aktualnyCzas);
+
+    // Funkcje Sieciowe
+    void trybLokalny();
+    void trybObiektu();
+    void trybRegulatora();
 };
 
 #endif // MAINWINDOW_H

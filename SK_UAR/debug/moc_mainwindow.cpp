@@ -81,7 +81,8 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
         "k",
         "P",
         "I",
-        "D"
+        "D",
+        "on_TrybSieciowy_Button_clicked"
     };
 
     QtMocHelpers::UintData qt_methods {
@@ -142,6 +143,8 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
             { QMetaType::Double, 36 }, { QMetaType::Double, 37 }, { QMetaType::Double, 38 }, { QMetaType::Double, 39 },
             { QMetaType::Int, 40 }, { QMetaType::Double, 41 }, { QMetaType::Double, 42 }, { QMetaType::Double, 43 },
         }}),
+        // Slot 'on_TrybSieciowy_Button_clicked'
+        QtMocHelpers::SlotData<void()>(44, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -188,6 +191,7 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         case 20: _t->on_SpinBox_Stala_editingFinished(); break;
         case 21: _t->on_spinBoxOknoczasowe_editingFinished(); break;
         case 22: _t->onKrokWykonany((*reinterpret_cast<std::add_pointer_t<double>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[6])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[7])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[8]))); break;
+        case 23: _t->on_TrybSieciowy_Button_clicked(); break;
         default: ;
         }
     }
@@ -212,14 +216,14 @@ int MainWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 23)
+        if (_id < 24)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 23;
+        _id -= 24;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 23)
+        if (_id < 24)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 23;
+        _id -= 24;
     }
     return _id;
 }
