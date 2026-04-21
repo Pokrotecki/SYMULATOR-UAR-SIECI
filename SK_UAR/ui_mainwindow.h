@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created by: Qt User Interface Compiler version 6.10.1
+** Created by: Qt User Interface Compiler version 6.4.3
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -55,7 +55,9 @@ public:
     QPushButton *Zapisz_Button;
     QLabel *label;
     QDoubleSpinBox *spinBOX_Interwal;
+    QHBoxLayout *horizontalLayout_14;
     QPushButton *TrybSieciowy_Button;
+    QLabel *StatusPolaczenia_Label;
     QHBoxLayout *horizontalLayout_17;
     QGroupBox *groupBox;
     QVBoxLayout *verticalLayout_6;
@@ -119,7 +121,7 @@ public:
 
         verticalLayout_9 = new QVBoxLayout();
         verticalLayout_9->setObjectName("verticalLayout_9");
-        verticalLayout_9->setSizeConstraint(QLayout::SizeConstraint::SetDefaultConstraint);
+        verticalLayout_9->setSizeConstraint(QLayout::SetDefaultConstraint);
         groupBox_4 = new QGroupBox(centralwidget);
         groupBox_4->setObjectName("groupBox_4");
         groupBox_4->setMinimumSize(QSize(0, 0));
@@ -219,16 +221,28 @@ public:
 
         verticalLayout_10->addLayout(horizontalLayout_10);
 
+        horizontalLayout_14 = new QHBoxLayout();
+        horizontalLayout_14->setObjectName("horizontalLayout_14");
         TrybSieciowy_Button = new QPushButton(groupBox_4);
         TrybSieciowy_Button->setObjectName("TrybSieciowy_Button");
-        QSizePolicy sizePolicy(QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Fixed);
-        sizePolicy.setHorizontalStretch(100);
-        sizePolicy.setVerticalStretch(10);
+        QSizePolicy sizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+        sizePolicy.setHorizontalStretch(0);
+        sizePolicy.setVerticalStretch(0);
         sizePolicy.setHeightForWidth(TrybSieciowy_Button->sizePolicy().hasHeightForWidth());
         TrybSieciowy_Button->setSizePolicy(sizePolicy);
-        TrybSieciowy_Button->setMinimumSize(QSize(478, 24));
+        TrybSieciowy_Button->setMinimumSize(QSize(0, 24));
 
-        verticalLayout_10->addWidget(TrybSieciowy_Button);
+        horizontalLayout_14->addWidget(TrybSieciowy_Button);
+
+        StatusPolaczenia_Label = new QLabel(groupBox_4);
+        StatusPolaczenia_Label->setObjectName("StatusPolaczenia_Label");
+        StatusPolaczenia_Label->setEnabled(true);
+        StatusPolaczenia_Label->setAlignment(Qt::AlignCenter);
+
+        horizontalLayout_14->addWidget(StatusPolaczenia_Label);
+
+
+        verticalLayout_10->addLayout(horizontalLayout_14);
 
 
         verticalLayout_9->addWidget(groupBox_4);
@@ -465,7 +479,7 @@ public:
 
         verticalLayout_9->addLayout(horizontalLayout_17);
 
-        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
+        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
         verticalLayout_9->addItem(verticalSpacer);
 
@@ -511,6 +525,7 @@ public:
         Zapisz_Button->setText(QCoreApplication::translate("MainWindow", "Zapisz", nullptr));
         label->setText(QCoreApplication::translate("MainWindow", "Interwa\305\202[ms]", nullptr));
         TrybSieciowy_Button->setText(QCoreApplication::translate("MainWindow", "TRYB SIECIOWY", nullptr));
+        StatusPolaczenia_Label->setText(QCoreApplication::translate("MainWindow", "Status Po\305\202\304\205czenia", nullptr));
         groupBox->setTitle(QCoreApplication::translate("MainWindow", "sygna\305\202", nullptr));
         Sin_Button->setText(QCoreApplication::translate("MainWindow", "sinus", nullptr));
         Square_Button->setText(QCoreApplication::translate("MainWindow", "square", nullptr));

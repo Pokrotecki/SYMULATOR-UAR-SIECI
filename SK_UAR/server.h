@@ -16,6 +16,9 @@ private slots:
     void onNewConnection();
     void onReadyRead();
 
+signals:
+    void connectedOk();
+
 private:
     QTcpServer server;
     QTcpSocket* socket = nullptr;

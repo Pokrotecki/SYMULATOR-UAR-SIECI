@@ -5,9 +5,10 @@ Client::Client(const QString& host, quint16 port, QObject* parent)
     : QObject(parent)
 {
     connect(&socket, &QTcpSocket::readyRead, this, &Client::onReadyRead);
-    connect(&socket, &QTcpSocket::connected, []()
+    connect(&socket, &QTcpSocket::connected,  /*this,*/ [this]() //czy this powinno oba ?
     {
         qDebug() << "KLIENT: Połączono z serwerem!";
+        emit connectedOk();
     });
     connect(&socket, &QTcpSocket::errorOccurred, [](QAbstractSocket::SocketError err)
     {

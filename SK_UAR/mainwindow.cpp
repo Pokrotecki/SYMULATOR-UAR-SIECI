@@ -10,6 +10,9 @@
 #include <QtCharts/QLineSeries>
 #include <QDebug>
 
+#include <QInputDialog>
+#include <QLineEdit>
+
 //KONSTRUKTOR
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -525,6 +528,7 @@ void MainWindow::on_Zapisz_Button_clicked()
         QMessageBox::warning(this, "Błąd", "Nie udało się zapisać");
 }
 
+/*
 void MainWindow::on_Wczytaj_Button_clicked()
 {
     QString sciezka = QFileDialog::getOpenFileName(this, "Wczytaj konfigurację", "", "JSON (*.json)");
@@ -577,62 +581,216 @@ void MainWindow::on_Wczytaj_Button_clicked()
 
 }
 
+*/
+
+void MainWindow::on_Wczytaj_Button_clicked()
+{
+    QString sciezka = QFileDialog::getOpenFileName(this,
+                                                   "Wczytaj konfigurację",
+                                                   "",
+                                                   "JSON (*.json)");
+    if (sciezka.isEmpty())
+        return;
+
+    std::vector<double> a, b;
+    int opoznienie;
+    double odchylenie, Kp, Ti, Td;
+    int typCalki, trybGeneratora;
+    double amplituda, StalaSkladniowa, Wypelnienie, czestotliwosc;
+    int interwalMs;
+    double uMin, uMax, yMin, yMax;
+
+    bool sukces = menedzerKonfig.wczytajKonfiguracje(sciezka,
+                                                     a,
+                                                     b,
+                                                     opoznienie,
+                                                     odchylenie,
+                                                     uMin,
+                                                     uMax,
+                                                     yMin,
+                                                     yMax,
+                                                     Kp,
+                                                     Ti,
+                                                     Td,
+                                                     typCalki,
+                                                     trybGeneratora,
+                                                     amplituda,
+                                                     czestotliwosc,
+                                                     StalaSkladniowa,
+                                                     Wypelnienie,
+                                                     interwalMs);
+
+    if (sukces) {
+        aktualnyWektorA = a;
+        aktualnyWektorB = b;
+        aktualneOpoznienie = opoznienie;
+        aktualnySzum = odchylenie;
+        arx_uMin = uMin;
+        arx_uMax = uMax;
+        arx_yMin = yMin;
+        arx_yMax = yMax;
+
+        symulator.setARX(a, b, opoznienie, odchylenie);
+        symulator.setARX_Umin(uMin);
+        symulator.setARX_Umax(uMax);
+        symulator.setARX_Ymin(yMin);
+        symulator.setARX_Ymax(yMax);
+        symulator.setPID_Umin(uMin);
+        symulator.setPID_Umax(uMax);
+
+        //dodane
+        symulator.setPID_Td(Td);
+        symulator.setPID_Ti(Ti);
+        symulator.setPID_Kp(Kp);
+        //symulator.setPID_TypCalki(typCalki);
+
+        ui->spinBOX_WzmocK->setValue(Kp);
+        ui->spinBOX_Ti->setValue(Ti);
+        ui->spinBOX_Td->setValue(Td);
+
+
+        on_spinBOX_Interwal_editingFinished();
+        on_spinBOX_WzmocK_editingFinished();
+
+        QMessageBox::information(this, "sukces", "konfiguracja wczytana");
+    } else {
+        QMessageBox::warning(this, "blad", "nie udało sie wczytac");
+    }
+}
+
 
 void MainWindow::on_TrybSieciowy_Button_clicked()
 {
     if(Tryb == lokalny)
     {
-    QMessageBox msgBox;
-    msgBox.setWindowTitle("Wybór trybu");
-    msgBox.setText("Wybierz tryb pracy aplikacji:");
-
-    QPushButton* btnObiekt = msgBox.addButton("Tryb obiektu", QMessageBox::AcceptRole);
-    QPushButton* btnRegulator = msgBox.addButton("Tryb regulatora", QMessageBox::AcceptRole);
-    QPushButton* btnAnuluj = msgBox.addButton("Anuluj", QMessageBox::RejectRole);
-
-    msgBox.exec();
-
-    if (msgBox.clickedButton() == btnObiekt)
-    {
-        qDebug() << "Wybrano tryb obiektu";
-        trybObiektu();
-    }
-    else if (msgBox.clickedButton() == btnRegulator)
-    {
-        qDebug() << "Wybrano tryb regulatora";
-        trybRegulatora();
-    }
-    else
-    {
-        qDebug() << "Anulowano wybór";
-    }
-    }
-    else
-    {
         QMessageBox msgBox;
         msgBox.setWindowTitle("Wybór trybu");
-        msgBox.setText("Powrót do trybu lokalnego?");
+        msgBox.setText("Wybierz tryb pracy aplikacji:");
 
-        QPushButton* btnZatwierdz = msgBox.addButton("Zatwierdź", QMessageBox::AcceptRole);
+        QPushButton* btnObiekt = msgBox.addButton("Tryb obiektu", QMessageBox::AcceptRole);
+        QPushButton* btnRegulator = msgBox.addButton("Tryb regulatora", QMessageBox::AcceptRole);
         QPushButton* btnAnuluj = msgBox.addButton("Anuluj", QMessageBox::RejectRole);
 
         msgBox.exec();
 
-        if (msgBox.clickedButton() == btnZatwierdz)
+        if (msgBox.clickedButton() == btnObiekt)
         {
-            qDebug() << "Powrót do trybu lokalnego";
-            trybLokalny();
+            uruchomSerwer();
         }
-        else
+        else if (msgBox.clickedButton() == btnRegulator)
         {
-            qDebug() << "Anulowano wybór";
+            uruchomKlienta();
         }
     }
+    else
+    {
+        QMessageBox::StandardButton reply;
+
+        reply = QMessageBox::question(
+            this,
+            "Powrót",
+            "Powrócić do trybu lokalnego?",
+            QMessageBox::Yes | QMessageBox::No
+            );
+
+        if(reply == QMessageBox::Yes)
+        {
+
+            if(server)
+            {
+                server->deleteLater();
+                server = nullptr;
+            }
+
+            if(client)
+            {
+                client->deleteLater();
+                client = nullptr;
+            }
+
+
+            trybLokalny();
+        }
+    }
+}
+void MainWindow::uruchomSerwer()
+{
+    bool ok;
+
+    int port = QInputDialog::getInt(
+        this,
+        "Port",
+        "Podaj port serwera:",
+        5000,      // domyślny
+        1,
+        65535,
+        1,
+        &ok
+        );
+
+    if(!ok)
+        return;
+
+    server = new Server(port, this);
+
+    statusPolaczeniaBrak();
+
+    connect(server, &Server::connectedOk,
+            this, &MainWindow::statusPolaczeniaOK);
+
+    QMessageBox::information(
+        this,
+        "Serwer",
+        "Uruchomiono serwer.\nOczekiwanie na klienta."
+        );
+
+    trybObiektu();
+}
+
+void MainWindow::uruchomKlienta()
+{
+    bool ok;
+
+    QString ip = QInputDialog::getText(
+        this,
+        "Połączenie",
+        "Podaj adres IP serwera:",
+        QLineEdit::Normal,
+        "127.0.0.1",
+        &ok
+        );
+
+    if(!ok || ip.isEmpty())
+        return;
+
+    int port = QInputDialog::getInt(
+        this,
+        "Port",
+        "Podaj port serwera:",
+        5000,
+        1,
+        65535,
+        1,
+        &ok
+        );
+
+    if(!ok)
+        return;
+
+    client = new Client(ip, port, this);
+
+    statusPolaczeniaBrak();
+
+    connect(client, &Client::connectedOk,
+            this, &MainWindow::statusPolaczeniaOK);
+
+    trybRegulatora();
 }
 
 void MainWindow::trybLokalny()
 {
     Tryb = lokalny;
+
     ui->TrybSieciowy_Button->setText("TRYB SIECIOWY");
     ui->RESET_Button->setEnabled(true);
     ui->Konf_ARX_Button->setEnabled(true);
@@ -656,6 +814,8 @@ void MainWindow::trybLokalny()
     ui->spinBox_Wypelnienie->setEnabled(true);
     ui->radio_pod->setEnabled(true);
     ui->radio_przed->setEnabled(true);
+
+    ukryjStatusPolaczenia();
 }
 
 void MainWindow::trybRegulatora()
@@ -691,6 +851,27 @@ void MainWindow::trybObiektu()
     ui->spinBox_Wypelnienie->setEnabled(false);
     ui->radio_pod->setEnabled(false);
     ui->radio_przed->setEnabled(false);
+}
+
+
+// na potrzeby kontrolki statusu polaczenia
+void MainWindow::statusPolaczeniaOK()
+{
+    ui->StatusPolaczenia_Label->show();
+    ui->StatusPolaczenia_Label->setText("Status połączenia: nawiązano");
+    ui->StatusPolaczenia_Label->setStyleSheet("background-color: green;");
+}
+
+void MainWindow::statusPolaczeniaBrak()
+{
+    ui->StatusPolaczenia_Label->show();
+    ui->StatusPolaczenia_Label->setText("Status połączenia: brak");
+    ui->StatusPolaczenia_Label->setStyleSheet("background-color: red;");
+}
+
+void MainWindow::ukryjStatusPolaczenia()
+{
+    ui->StatusPolaczenia_Label->hide();
 }
 
 /*

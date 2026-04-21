@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include "Symulator.h"
 #include "arxwindow.h"
+#include "server.h"
+#include "client.h"
 #include "MenedzerKonfiguracji.h"
 #include <QTimer>
 #include <QFileDialog>
@@ -69,7 +71,7 @@ private:
     ARXwindow *arxwindow = nullptr;
     SymulatorUAR symulator;
 
-    // Tryby aplikacji
+    // zmienne na potrzeby polaczenia sieciowego
     enum tryb
     {
         lokalny,
@@ -77,6 +79,8 @@ private:
         regulator
     };
     tryb Tryb;
+    Server* server=nullptr;
+    Client* client=nullptr;
 
     //  Wykresy i Serie
     QLineSeries *seriaP;
@@ -127,6 +131,14 @@ private:
     void trybLokalny();
     void trybObiektu();
     void trybRegulatora();
+
+    void uruchomKlienta();
+    void uruchomSerwer();
+    void disconnectNetwork();
+
+    void statusPolaczeniaOK();
+    void statusPolaczeniaBrak();
+    void ukryjStatusPolaczenia();
 };
 
 #endif // MAINWINDOW_H

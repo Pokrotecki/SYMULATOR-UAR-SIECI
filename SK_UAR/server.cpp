@@ -14,6 +14,8 @@ void Server::onNewConnection()
     socket = server.nextPendingConnection();
     connect(socket, &QTcpSocket::readyRead, this, &Server::onReadyRead);
     qDebug() << "Połączono z klientem";
+
+    emit connectedOk();
 }
 
 void Server::onReadyRead()

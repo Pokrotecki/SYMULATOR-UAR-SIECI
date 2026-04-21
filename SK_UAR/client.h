@@ -17,6 +17,9 @@ public slots:
 private slots:
     void onReadyRead();
 
+signals:
+    void connectedOk();
+
 private:
     QTcpSocket socket;
 };
