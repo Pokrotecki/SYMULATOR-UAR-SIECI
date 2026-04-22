@@ -149,6 +149,20 @@ MainWindow::MainWindow(QWidget *parent)
     RegulatorchartView->setRenderHint(QPainter::Antialiasing);
     ui->horizontalLayout_4->addWidget(RegulatorchartView, 1);
     RegulatorchartView->setMinimumSize(0, 300);
+
+
+    //dodane aby domyslnie startowalo z danymi
+    ustawARXDane(
+        aktualnyWektorA,
+        aktualnyWektorB,
+        aktualneOpoznienie,
+        aktualnySzum,
+        arx_uMin,
+        arx_uMax,
+        arx_yMin,
+        arx_yMax,
+        arx_ograniczenia
+        );
 }
 
 void MainWindow::aktualizujZakresOsiX(double krokAnimacji, double wymaganeOkno, double aktualnyCzas)
@@ -600,25 +614,12 @@ void MainWindow::on_Wczytaj_Button_clicked()
     int interwalMs;
     double uMin, uMax, yMin, yMax;
 
-    bool sukces = menedzerKonfig.wczytajKonfiguracje(sciezka,
-                                                     a,
-                                                     b,
-                                                     opoznienie,
-                                                     odchylenie,
-                                                     uMin,
-                                                     uMax,
-                                                     yMin,
-                                                     yMax,
-                                                     Kp,
-                                                     Ti,
-                                                     Td,
-                                                     typCalki,
-                                                     trybGeneratora,
-                                                     amplituda,
-                                                     czestotliwosc,
-                                                     StalaSkladniowa,
-                                                     Wypelnienie,
-                                                     interwalMs);
+    bool sukces = menedzerKonfig.wczytajKonfiguracje(
+        sciezka,a,b,opoznienie,odchylenie,
+        uMin,uMax,yMin,yMax,
+        Kp,Ti,Td,typCalki,trybGeneratora,
+        amplituda,czestotliwosc,StalaSkladniowa,Wypelnienie,
+        interwalMs);
 
     if (sukces) {
         aktualnyWektorA = a;
@@ -637,12 +638,10 @@ void MainWindow::on_Wczytaj_Button_clicked()
         symulator.setARX_Ymax(yMax);
         symulator.setPID_Umin(uMin);
         symulator.setPID_Umax(uMax);
-
         //dodane
         symulator.setPID_Td(Td);
         symulator.setPID_Ti(Ti);
         symulator.setPID_Kp(Kp);
-        //symulator.setPID_TypCalki(typCalki);
 
         ui->spinBOX_WzmocK->setValue(Kp);
         ui->spinBOX_Ti->setValue(Ti);
@@ -887,3 +886,9 @@ else if (Tryb == regulator)
 }
 
 */
+
+void MainWindow::on_radio_przed_clicked()
+{
+
+}
+

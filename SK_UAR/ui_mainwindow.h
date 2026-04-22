@@ -455,6 +455,7 @@ public:
         buttonGroup->setObjectName("buttonGroup");
         buttonGroup->addButton(radio_przed);
         radio_przed->setObjectName("radio_przed");
+        radio_przed->setChecked(true);
 
         horizontalLayout->addWidget(radio_przed);
 
@@ -525,7 +526,7 @@ public:
         Zapisz_Button->setText(QCoreApplication::translate("MainWindow", "Zapisz", nullptr));
         label->setText(QCoreApplication::translate("MainWindow", "Interwa\305\202[ms]", nullptr));
         TrybSieciowy_Button->setText(QCoreApplication::translate("MainWindow", "TRYB SIECIOWY", nullptr));
-        StatusPolaczenia_Label->setText(QCoreApplication::translate("MainWindow", "Status Po\305\202\304\205czenia", nullptr));
+        StatusPolaczenia_Label->setText(QString());
         groupBox->setTitle(QCoreApplication::translate("MainWindow", "sygna\305\202", nullptr));
         Sin_Button->setText(QCoreApplication::translate("MainWindow", "sinus", nullptr));
         Square_Button->setText(QCoreApplication::translate("MainWindow", "square", nullptr));

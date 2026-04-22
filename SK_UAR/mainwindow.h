@@ -65,6 +65,8 @@ private slots:
 
     void on_TrybSieciowy_Button_clicked();
 
+    void on_radio_przed_clicked();
+
 private:
     Ui::MainWindow *ui;
     MenedzerKonfiguracji menedzerKonfig;

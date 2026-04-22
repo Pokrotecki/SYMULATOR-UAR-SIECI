@@ -47,7 +47,7 @@ public:
     double generuj(int i)
     {
         // Oblicz czas dla tego kroku
-        double deltaCzas = TT / 10000.0; // Konwersja ms na s
+        double deltaCzas = TT / 1000.0; // Konwersja ms na s
 
         if (ostatniKrok == -1 || i <= ostatniKrok) {
             // Reset lub pierwsze wywołanie

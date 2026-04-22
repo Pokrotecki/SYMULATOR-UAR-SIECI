@@ -4,7 +4,9 @@
 class RegulatorPID
 {
 public:
-    enum LiczCalk { PROSTOKATNY, Wew, Zew };//tryb metody obliczania całki
+    //tak bylo
+    //enum LiczCalk { PROSTOKATNY, Wew, Zew };//tryb metody obliczania całki
+    enum LiczCalk { Wew, Zew };
 
 private:
     double Kp;//wzmocnienie regulatora
@@ -17,7 +19,7 @@ private:
     double uchyb_poprzedni;//uchyb z poprzedniej iteracji
     double akum_wew;
     double akum_zew;
-    LiczCalk typCalki;
+    LiczCalk typCalki=LiczCalk::Zew; //dodana domyslna
     static constexpr double EPS = 1e-12;//dzielenie przez 0
 
 public:
@@ -31,7 +33,7 @@ public:
         umin(-10.0), umax(10.0),
         ograniczenia(true),
         uchyb_poprzedni(0.0), akum_wew(0.0), akum_zew(0.0),
-        typCalki(PROSTOKATNY), P(0.0), I(0.0), D(0.0)
+        typCalki(Zew), P(0.0), I(0.0), D(0.0)
     {}
 
     double saturacja(double wartosc, double min_val, double max_val)
@@ -107,7 +109,8 @@ public:
                 break;
             case Zew:
                 akum_zew += uchyb;
-                I = akum_zew * Ti / uchyb;
+                //I = akum_zew * Ti / uchyb; tak bylo
+                I = akum_zew * 1.0/Ti;
                 break;
             default:
                 I = 0.0;
