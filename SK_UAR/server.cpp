@@ -4,34 +4,66 @@
 Server::Server(quint16 port, QObject* parent)
     : QObject(parent)
 {
-    connect(&server, &QTcpServer::newConnection, this, &Server::onNewConnection);
+    connect(&server, &QTcpServer::newConnection,
+            this, &Server::onNewConnection);
+
     server.listen(QHostAddress::Any, port);
-    qDebug() << "Serwer nasłuchuje na porcie" << port;
 }
 
 void Server::onNewConnection()
 {
     socket = server.nextPendingConnection();
-    connect(socket, &QTcpSocket::readyRead, this, &Server::onReadyRead);
-    qDebug() << "Połączono z klientem";
+
+    connect(socket, &QTcpSocket::readyRead,
+            this, &Server::onReadyRead);
 
     emit connectedOk();
 }
 
-void Server::onReadyRead()
+void Server::sendStep(const StepPacket& p)
 {
-    QDataStream in(socket);
-    StepPacket p;
-    in >> p;
-
-    qDebug() << "Serwer odebrał krok:" << p.k << " y=" << p.y;
-
-    StepPacket reply = p;
-    reply.y += 1; // przykładowa modyfikacja
+    if (!socket) return;
 
     QByteArray buf;
     QDataStream out(&buf, QIODevice::WriteOnly);
-    out << reply;
+
+    out << quint32(0);
+    out << quint16(1);   // typ = StepPacket
+    out << p;
+
+    out.device()->seek(0);
+    out << quint32(buf.size() - sizeof(quint32));
 
     socket->write(buf);
+}
+
+void Server::onReadyRead()
+{
+    buffer.append(socket->readAll());
+
+    while (true)
+    {
+        if (buffer.size() < 4)
+            return;
+
+        QDataStream sizeStream(buffer);
+        quint32 size;
+        sizeStream >> size;
+
+        if (buffer.size() < 4 + size)
+            return;
+
+        QByteArray packet = buffer.mid(4, size);
+        buffer.remove(0, 4 + size);
+
+        QDataStream in(packet);
+        quint16 type;
+        in >> type;
+
+        if (type == 2) {
+            ConfigPacket c;
+            in >> c;
+            emit configReceived(c);
+        }
+    }
 }

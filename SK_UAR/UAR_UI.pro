@@ -16,6 +16,7 @@ SOURCES += \
     server.cpp
 
 HEADERS += \
+    ConfigPacket.h \
     GeneratorSygnalu.h \
     MenedzerKonfiguracji.h \
     ModelARX.h \

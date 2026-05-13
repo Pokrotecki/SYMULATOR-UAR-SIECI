@@ -59,6 +59,8 @@ private slots:
     void on_spinBox_Wypelnienie_editingFinished();
     void on_SpinBox_Stala_editingFinished();
     void on_spinBoxOknoczasowe_editingFinished();
+    void wyslijConfigPacket();
+    void wyslijStepPacket(double w, double y, double e, double u, int k, double P, double I, double D);
 
     //  Główny slot odbierający dane z symulatora
     void onKrokWykonany(double w, double y, double e, double u, int k, double P, double I, double D);
@@ -141,6 +143,9 @@ private:
     void statusPolaczeniaOK();
     void statusPolaczeniaBrak();
     void ukryjStatusPolaczenia();
+
+    void onStepPacketReceivedClient(const StepPacket& p);
+    void onConfigPacketReceivedServer(const ConfigPacket& c);
 };
 
 #endif // MAINWINDOW_H

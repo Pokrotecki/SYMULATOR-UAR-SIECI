@@ -330,50 +330,84 @@ MainWindow::~MainWindow()
 void MainWindow::on_Sin_Button_clicked()
 {
     symulator.setGeneratorTryb(GeneratorSygnalu::SINUS);
+    if(Tryb == regulator && client)
+    {
+    wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_Square_Button_clicked()
 {
     symulator.setGeneratorTryb(GeneratorSygnalu::PROSTOKAT);
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_spinBOX_WzmocK_editingFinished()
 {
     symulator.setPID_Kp(ui->spinBOX_WzmocK->value());
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 
 }
 
 void MainWindow::on_spinBOX_Amplituda_editingFinished()
 {
     symulator.setGeneratorA(ui->spinBOX_Amplituda->value());
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 
 }
 
 void MainWindow::on_spinBOX_Czstotliwosc_editingFinished()
 {
     symulator.setGeneratorTRZ(ui->spinBOX_Czstotliwosc->value());
-
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_spinBox_Wypelnienie_editingFinished()
 {
     symulator.setGeneratorP(ui->spinBox_Wypelnienie->value());
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_SpinBox_Stala_editingFinished()
 {
     symulator.setGeneratorS(ui->SpinBox_Stala->value());
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_spinBOX_Td_editingFinished()
 {
     symulator.setPID_Td(ui->spinBOX_Td->value());
-
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_spinBOX_Ti_editingFinished()
 {
     symulator.setPID_Ti(ui->spinBOX_Ti->value());
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 
 }
 
@@ -385,6 +419,10 @@ void MainWindow::on_spinBOX_Interwal_editingFinished()
     symulator.setGeneratorTT(nowyInterwal);
     symulator.setInterwalMs(nowyInterwal);
     symulator.setPID_T(nowyInterwal / 1000.0);
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 
 }
 
@@ -392,22 +430,40 @@ void MainWindow::on_radio_przed_toggled(bool checked)
 {
     if (checked)
         symulator.setPID_TypCalki(RegulatorPID::Zew);
+
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_radio_pod_toggled(bool checked)
 {
     if (checked)
         symulator.setPID_TypCalki(RegulatorPID::Wew);
+
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_Reset_d_clicked()
 {
     symulator.setPID_Td(0);
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_Reset_i_clicked()
 {
     symulator.setPID_Ti(0);
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_START_Button_clicked()
@@ -466,6 +522,10 @@ void MainWindow::on_RESET_Button_clicked()
     symulator.setPID_Ograniczenia(true);
 
     wyczyscWykresy();
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::ustawARXDane(const std::vector<double> &a,
@@ -652,6 +712,7 @@ void MainWindow::on_Wczytaj_Button_clicked()
         on_spinBOX_WzmocK_editingFinished();
 
         QMessageBox::information(this, "sukces", "konfiguracja wczytana");
+        wyslijConfigPacket();
     } else {
         QMessageBox::warning(this, "blad", "nie udało sie wczytac");
     }
@@ -736,6 +797,9 @@ void MainWindow::uruchomSerwer()
 
     connect(server, &Server::connectedOk,
             this, &MainWindow::statusPolaczeniaOK);
+    connect(server, &Server::configReceived,
+            this, &MainWindow::onConfigPacketReceivedServer);
+    connect(&symulator, &SymulatorUAR::krokWykonany, this, &MainWindow::wyslijStepPacket);
 
     QMessageBox::information(
         this,
@@ -782,6 +846,8 @@ void MainWindow::uruchomKlienta()
 
     connect(client, &Client::connectedOk,
             this, &MainWindow::statusPolaczeniaOK);
+    connect(client, &Client::stepReceived,
+            this, &MainWindow::onStepPacketReceivedClient);
 
     trybRegulatora();
 }
@@ -873,6 +939,55 @@ void MainWindow::ukryjStatusPolaczenia()
     ui->StatusPolaczenia_Label->hide();
 }
 
+void MainWindow::onStepPacketReceivedClient(const StepPacket& p)
+{
+    onKrokWykonany(p.w, p.y, p.e, p.u, p.k, p.P, p.I, p.D);
+}
+
+void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
+{
+    symulator.setPID_Kp(c.Kp);
+    symulator.setPID_Ti(c.Ti);
+    symulator.setPID_Td(c.Td);
+
+    symulator.setGeneratorA(c.A);
+    symulator.setGeneratorTRZ(c.TRZ);
+    symulator.setGeneratorP(c.P);
+    symulator.setGeneratorS(c.S);
+    symulator.setGeneratorTT(c.TT);
+
+    symulator.setARX(c.arxA, c.arxB, c.opoznienie, c.szum);
+    symulator.setARX_Ograniczenia(c.ograniczenia);
+    symulator.setPID_Ograniczenia(c.ograniczenia);
+}
+
+void MainWindow::wyslijConfigPacket()
+{
+    ConfigPacket c = makeConfigPacket(
+        ui->spinBOX_WzmocK->value(),
+        ui->spinBOX_Ti->value(),
+        ui->spinBOX_Td->value(),
+        ui->spinBOX_Amplituda->value(),
+        ui->spinBOX_Czstotliwosc->value(),
+        ui->spinBox_Wypelnienie->value(),
+        ui->SpinBox_Stala->value(),
+        ui->spinBOX_Interwal->value(),
+        aktualnyWektorA,
+        aktualnyWektorB,
+        aktualneOpoznienie,
+        aktualnySzum,
+        arx_ograniczenia
+        );
+
+    client->sendConfig(c);
+}
+
+void MainWindow::wyslijStepPacket(double w, double y, double e, double u, int k, double P, double I, double D)
+{
+    StepPacket p = makeStepPacket(w, y, e, u, k, P, I, D);
+    server->sendStep(p);
+}
+
 /*
  * MASZ TU WKLEJKE KTORA TRZEBA DODAC DO KONTROLEK JAK ZROBISZ PRZESYL KONFIGURACJI
 
@@ -891,4 +1006,6 @@ void MainWindow::on_radio_przed_clicked()
 {
 
 }
+
+
 

@@ -4,33 +4,67 @@
 Client::Client(const QString& host, quint16 port, QObject* parent)
     : QObject(parent)
 {
-    connect(&socket, &QTcpSocket::readyRead, this, &Client::onReadyRead);
-    connect(&socket, &QTcpSocket::connected,  /*this,*/ [this]() //czy this powinno oba ?
-    {
-        qDebug() << "KLIENT: Połączono z serwerem!";
-        emit connectedOk();
-    });
-    connect(&socket, &QTcpSocket::errorOccurred, [](QAbstractSocket::SocketError err)
-    {
-        qDebug() << "KLIENT: Błąd połączenia:" << err;
-    });
+    connect(&socket, &QTcpSocket::readyRead,
+            this, &Client::onReadyRead);
+
+    connect(&socket, &QTcpSocket::connected,
+            this, [this]()
+            {
+                qDebug() << "KLIENT: Połączono z serwerem!";
+                emit connectedOk();
+            });
+
+    connect(&socket, &QTcpSocket::errorOccurred,
+            [](QAbstractSocket::SocketError err)
+            {
+                qDebug() << "KLIENT: Błąd połączenia:" << err;
+            });
+
     socket.connectToHost(host, port);
-    qDebug() << "Klient łączy się z" << host << port;
 }
 
-void Client::sendStep(const StepPacket& p)
+void Client::sendConfig(const ConfigPacket& c)
 {
     QByteArray buf;
     QDataStream out(&buf, QIODevice::WriteOnly);
-    out << p;
+
+    out << quint32(0);   // placeholder
+    out << quint16(2);   // typ = ConfigPacket
+    out << c;
+
+    out.device()->seek(0);
+    out << quint32(buf.size() - sizeof(quint32));
+
     socket.write(buf);
 }
 
 void Client::onReadyRead()
 {
-    QDataStream in(&socket);
-    StepPacket p;
-    in >> p;
+    buffer.append(socket.readAll());
 
-    qDebug() << "Klient odebrał odpowiedź:" << p.k << " y=" << p.y;
+    while (true)
+    {
+        if (buffer.size() < 4)
+            return;
+
+        QDataStream sizeStream(buffer);
+        quint32 size;
+        sizeStream >> size;
+
+        if (buffer.size() < 4 + size)
+            return;
+
+        QByteArray packet = buffer.mid(4, size);
+        buffer.remove(0, 4 + size);
+
+        QDataStream in(packet);
+        quint16 type;
+        in >> type;
+
+        if (type == 1) {
+            StepPacket p;
+            in >> p;
+            emit stepReceived(p);
+        }
+    }
 }

@@ -18,4 +18,18 @@ inline QDataStream& operator>>(QDataStream& in, StepPacket& p) {
     in >> p.w >> p.y >> p.e >> p.u >> p.k >> p.P >> p.I >> p.D;
     return in;
 }
+
+inline StepPacket makeStepPacket(double w, double y, double e, double u, int k, double P, double I, double D)
+{
+    StepPacket p;
+    p.w = w;
+    p.y = y;
+    p.e = e;
+    p.u = u;
+    p.k = k;
+    p.P = P;
+    p.I = I;
+    p.D = D;
+    return p;
+}
 #endif // STEPPACKET_H

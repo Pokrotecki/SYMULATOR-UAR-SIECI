@@ -73,7 +73,8 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
         "on_spinBox_Wypelnienie_editingFinished",
         "on_SpinBox_Stala_editingFinished",
         "on_spinBoxOknoczasowe_editingFinished",
-        "onKrokWykonany",
+        "wyslijConfigPacket",
+        "wyslijStepPacket",
         "w",
         "y",
         "e",
@@ -81,7 +82,10 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
         "k",
         "P",
         "I",
-        "D"
+        "D",
+        "onKrokWykonany",
+        "on_TrybSieciowy_Button_clicked",
+        "on_radio_przed_clicked"
     };
 
     QtMocHelpers::UintData qt_methods {
@@ -137,11 +141,22 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
         QtMocHelpers::SlotData<void()>(33, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'on_spinBoxOknoczasowe_editingFinished'
         QtMocHelpers::SlotData<void()>(34, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'onKrokWykonany'
-        QtMocHelpers::SlotData<void(double, double, double, double, int, double, double, double)>(35, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::Double, 36 }, { QMetaType::Double, 37 }, { QMetaType::Double, 38 }, { QMetaType::Double, 39 },
-            { QMetaType::Int, 40 }, { QMetaType::Double, 41 }, { QMetaType::Double, 42 }, { QMetaType::Double, 43 },
+        // Slot 'wyslijConfigPacket'
+        QtMocHelpers::SlotData<void()>(35, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'wyslijStepPacket'
+        QtMocHelpers::SlotData<void(double, double, double, double, int, double, double, double)>(36, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Double, 37 }, { QMetaType::Double, 38 }, { QMetaType::Double, 39 }, { QMetaType::Double, 40 },
+            { QMetaType::Int, 41 }, { QMetaType::Double, 42 }, { QMetaType::Double, 43 }, { QMetaType::Double, 44 },
         }}),
+        // Slot 'onKrokWykonany'
+        QtMocHelpers::SlotData<void(double, double, double, double, int, double, double, double)>(45, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Double, 37 }, { QMetaType::Double, 38 }, { QMetaType::Double, 39 }, { QMetaType::Double, 40 },
+            { QMetaType::Int, 41 }, { QMetaType::Double, 42 }, { QMetaType::Double, 43 }, { QMetaType::Double, 44 },
+        }}),
+        // Slot 'on_TrybSieciowy_Button_clicked'
+        QtMocHelpers::SlotData<void()>(46, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'on_radio_przed_clicked'
+        QtMocHelpers::SlotData<void()>(47, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -187,7 +202,11 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         case 19: _t->on_spinBox_Wypelnienie_editingFinished(); break;
         case 20: _t->on_SpinBox_Stala_editingFinished(); break;
         case 21: _t->on_spinBoxOknoczasowe_editingFinished(); break;
-        case 22: _t->onKrokWykonany((*reinterpret_cast<std::add_pointer_t<double>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[6])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[7])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[8]))); break;
+        case 22: _t->wyslijConfigPacket(); break;
+        case 23: _t->wyslijStepPacket((*reinterpret_cast<std::add_pointer_t<double>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[6])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[7])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[8]))); break;
+        case 24: _t->onKrokWykonany((*reinterpret_cast<std::add_pointer_t<double>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[6])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[7])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[8]))); break;
+        case 25: _t->on_TrybSieciowy_Button_clicked(); break;
+        case 26: _t->on_radio_przed_clicked(); break;
         default: ;
         }
     }
@@ -212,14 +231,14 @@ int MainWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 23)
+        if (_id < 27)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 23;
+        _id -= 27;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 23)
+        if (_id < 27)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 23;
+        _id -= 27;
     }
     return _id;
 }
