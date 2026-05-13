@@ -54,6 +54,11 @@ public:
         D = 0.0;
     }
 
+    void reset_calki(){
+        akum_wew=0.0;
+        akum_zew=0.0;
+    }
+
     void setOgraniczenia(bool Ograniczenia){ograniczenia = Ograniczenia;}
     void setKp(double kp) { Kp = kp; }
     void setTd(double td) { Td = td; }

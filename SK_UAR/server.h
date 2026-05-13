@@ -8,6 +8,10 @@
 #include "StepPacket.h"
 #include "ConfigPacket.h"
 
+//IDK
+#include "ControlPacket.h"
+#include "OutputPacket.h"
+
 class Server : public QObject
 {
     Q_OBJECT
@@ -16,9 +20,17 @@ public:
 
     void sendStep(const StepPacket& p);
 
+    //IDK
+    void sendOutput(const OutputPacket& p);
+    QTcpSocket* getSocket() const { return socket; }
+
 signals:
     void connectedOk();
+    void disconnected();
     void configReceived(const ConfigPacket& c);
+    //IDK
+    void sterowanieReceived(double u, double w);
+    //void controlReceived(double u);
 
 private slots:
     void onNewConnection();

@@ -14,6 +14,13 @@ Client::Client(const QString& host, quint16 port, QObject* parent)
                 emit connectedOk();
             });
 
+    connect(&socket, &QTcpSocket::disconnected,
+            this, [this]()
+            {
+                qDebug() << "KLIENT: rozłączono z serwerem";
+                emit disconnected();
+            });
+
     connect(&socket, &QTcpSocket::errorOccurred,
             [](QAbstractSocket::SocketError err)
             {
@@ -66,5 +73,32 @@ void Client::onReadyRead()
             in >> p;
             emit stepReceived(p);
         }
+        if (type == 4)
+        {
+            OutputPacket p;
+            in >> p;
+
+            emit outputReceived(p.y);
+        }
     }
+}
+
+//IDK
+void Client::sendControl(double u, double w)
+{
+    QByteArray buf;
+    QDataStream out(&buf, QIODevice::WriteOnly);
+
+    ControlPacket p;
+    p.u = u;
+    p.w = w;
+
+    out << quint32(0);
+    out << quint16(3);
+    out << p;
+
+    out.device()->seek(0);
+    out << quint32(buf.size() - sizeof(quint32));
+
+    socket.write(buf);
 }

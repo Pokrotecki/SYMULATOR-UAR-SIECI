@@ -7,6 +7,9 @@
 #include "StepPacket.h"
 #include "ConfigPacket.h"
 
+#include "ControlPacket.h"
+#include "OutputPacket.h"
+
 class Client : public QObject
 {
     Q_OBJECT
@@ -14,10 +17,16 @@ public:
     explicit Client(const QString& host, quint16 port, QObject* parent = nullptr);
 
     void sendConfig(const ConfigPacket& c);
+    //IDK
+    void sendControl(double u, double w);
+    QTcpSocket* getSocket() { return &socket; }
 
 signals:
     void connectedOk();
+    void disconnected();
     void stepReceived(const StepPacket& p);
+    //IDK
+    void outputReceived(double y);
 
 private slots:
     void onReadyRead();

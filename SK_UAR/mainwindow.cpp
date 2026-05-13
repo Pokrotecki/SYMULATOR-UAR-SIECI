@@ -163,6 +163,8 @@ MainWindow::MainWindow(QWidget *parent)
         arx_yMax,
         arx_ograniczenia
         );
+    // schowanie funkcjonalnosci sieciowej
+    ui->StatusPolaczenia_Label->hide();
 }
 
 void MainWindow::aktualizujZakresOsiX(double krokAnimacji, double wymaganeOkno, double aktualnyCzas)
@@ -237,6 +239,10 @@ void MainWindow::onKrokWykonany(double w, double y, double e, double u, int k, d
         dopasujSkalePionowa(pidY, {seriaP, seriaI, seriaD});
         dopasujSkalePionowa(uchybY, {seriaUchyb});
         dopasujSkalePionowa(regY, {seriaRegulator});
+    }
+
+    if(Tryb!=tryb::lokalny){
+        aktualizujStatusSieci();
     }
 }
 void MainWindow::dopasujSkalePionowa(QValueAxis *osY, QList<QLineSeries*> serie)
@@ -459,7 +465,8 @@ void MainWindow::on_Reset_d_clicked()
 
 void MainWindow::on_Reset_i_clicked()
 {
-    symulator.setPID_Ti(0);
+    //symulator.setPID_Ti(0);
+    symulator.PID_resetCalki();
     if(Tryb == regulator && client)
     {
         wyslijConfigPacket();
@@ -556,6 +563,8 @@ void MainWindow::ustawARXDane(const std::vector<double> &a,
     symulator.setPID_Umin(uMin);
     symulator.setPID_Umax(uMax);
     symulator.setPID_Ograniczenia(aktywne);
+
+
 }
 
 void MainWindow::on_Konf_ARX_Button_clicked()
@@ -569,6 +578,11 @@ void MainWindow::on_Konf_ARX_Button_clicked()
     arxwindow->show();
     arxwindow->raise();
     arxwindow->activateWindow();
+
+    if(Tryb == regulator && server) //IDK czy dobre miejsce
+    {
+        wyslijConfigPacket();
+    }
 }
 
 void MainWindow::on_Zapisz_Button_clicked()
@@ -793,13 +807,21 @@ void MainWindow::uruchomSerwer()
 
     server = new Server(port, this);
 
-    statusPolaczeniaBrak();
+    //statusPolaczeniaBrak(); do usuniecia raczej
+    aktualizujStatusSieci();
 
-    connect(server, &Server::connectedOk,
-            this, &MainWindow::statusPolaczeniaOK);
+    //connect(server, &Server::connectedOk,this, &MainWindow::statusPolaczeniaOK);
+    // KONTROLKA STATUS SIECI
+    connect(server, &Server::connectedOk,this, &MainWindow::aktualizujStatusSieci);
+    connect(server, &Server::disconnected,this, &MainWindow::aktualizujStatusSieci);
+
     connect(server, &Server::configReceived,
             this, &MainWindow::onConfigPacketReceivedServer);
-    connect(&symulator, &SymulatorUAR::krokWykonany, this, &MainWindow::wyslijStepPacket);
+    //connect(&symulator, &SymulatorUAR::krokWykonany, this, &MainWindow::wyslijStepPacket); IDK to nie bo wysyla cale dane a obiekt ma lokalnie se liczyc
+    // IDK dodane aby wyliczac pomiedzy oboma info
+    connect(server,&Server::sterowanieReceived,this,&MainWindow::onSterowanieReceived);
+    //IDK zmiana sposobu liczenia w symulatorze
+    symulator.setTrybSieciowyRegulator(false);
 
     QMessageBox::information(
         this,
@@ -808,6 +830,21 @@ void MainWindow::uruchomSerwer()
         );
 
     trybObiektu();
+}
+
+//IDK wyliczanie glownego sterowania
+void MainWindow::onSterowanieReceived(double u, double w)
+{
+    qDebug() << "MAINWINDOW: liczę obiekt dla u =" << u;
+
+    //double y = symulator.symulujObiekt(u);
+    symulator.krokSieciowyObiektu(u, w);
+
+    OutputPacket p;
+    //p.y = y;
+    p.y = symulator.getWyjscie();
+
+    server->sendOutput(p);
 }
 
 void MainWindow::uruchomKlienta()
@@ -842,12 +879,23 @@ void MainWindow::uruchomKlienta()
 
     client = new Client(ip, port, this);
 
-    statusPolaczeniaBrak();
+    //statusPolaczeniaBrak();
+    aktualizujStatusSieci();
 
-    connect(client, &Client::connectedOk,
-            this, &MainWindow::statusPolaczeniaOK);
-    connect(client, &Client::stepReceived,
-            this, &MainWindow::onStepPacketReceivedClient);
+    //connect(client, &Client::connectedOk,this, &MainWindow::statusPolaczeniaOK);
+    //
+    connect(client, &Client::connectedOk,this, &MainWindow::aktualizujStatusSieci);
+    connect(client, &Client::disconnected,this, &MainWindow::aktualizujStatusSieci);
+
+
+    //connect(client, &Client::stepReceived,this, &MainWindow::onStepPacketReceivedClient); IDK to raczej nie potrzebne
+    //IDK
+    connect(&symulator, &SymulatorUAR::wyslijSterowanie,
+            client, &Client::sendControl);
+    //IDK zmiana sposobu wyliczania symulacji w symulatorze
+    symulator.setTrybSieciowyRegulator(true);
+    //IDK
+    connect(client, &Client::outputReceived,this, &MainWindow::onOutputReceived);
 
     trybRegulatora();
 }
@@ -895,7 +943,7 @@ void MainWindow::trybObiektu()
     Tryb = obiekt;
     ui->TrybSieciowy_Button->setText("Powrot do trybu lokalnego");
     ui->RESET_Button->setEnabled(false);
-    ui->Konf_ARX_Button->setEnabled(false);
+    //ui->Konf_ARX_Button->setEnabled(false); IDK
     ui->START_Button->setEnabled(false);
     ui->RESET_Button->setEnabled(false);
     ui->Square_Button->setEnabled(false);
@@ -920,6 +968,7 @@ void MainWindow::trybObiektu()
 
 
 // na potrzeby kontrolki statusu polaczenia
+/*
 void MainWindow::statusPolaczeniaOK()
 {
     ui->StatusPolaczenia_Label->show();
@@ -933,15 +982,85 @@ void MainWindow::statusPolaczeniaBrak()
     ui->StatusPolaczenia_Label->setText("Status połączenia: brak");
     ui->StatusPolaczenia_Label->setStyleSheet("background-color: red;");
 }
+*/
+
 
 void MainWindow::ukryjStatusPolaczenia()
 {
     ui->StatusPolaczenia_Label->hide();
 }
 
+void MainWindow::aktualizujStatusSieci()
+{
+    // brak trybu sieciowego
+    if(!client && !server)
+    {
+        ui->StatusPolaczenia_Label->hide();
+        return;
+    }
+
+    ui->StatusPolaczenia_Label->show();
+
+    bool polaczono = false;
+
+    // SERVER
+    if(server && server->getSocket())
+    {
+        polaczono = (server->getSocket()->state() == QAbstractSocket::ConnectedState);
+    }
+
+    // CLIENT
+    if(client)
+    {
+        polaczono = (client->getSocket()->state() == QAbstractSocket::ConnectedState);
+    }
+
+    // BRAK POŁĄCZENIA
+    if(!polaczono)
+    {
+        ui->StatusPolaczenia_Label->setText("Brak połączenia");
+        ui->StatusPolaczenia_Label->setStyleSheet(
+            "background-color: red;"
+            "color: white;"
+            "border-radius: 8px;"
+            "padding: 4px;"
+            );
+
+        return;
+    }
+
+    // OPÓŹNIENIA
+    if(!symulator.czyPakietyNaCzas())
+    {
+        ui->StatusPolaczenia_Label->setText("Połączono - opóźnienia");
+        ui->StatusPolaczenia_Label->setStyleSheet(
+            "background-color: orange;"
+            "color: black;"
+            "border-radius: 8px;"
+            "padding: 4px;"
+            );
+
+        return;
+    }
+
+    // OK
+    ui->StatusPolaczenia_Label->setText("Połączono - synchronizacja OK");
+    ui->StatusPolaczenia_Label->setStyleSheet(
+        "background-color: green;"
+        "color: white;"
+        "border-radius: 8px;"
+        "padding: 4px;"
+        );
+}
+
 void MainWindow::onStepPacketReceivedClient(const StepPacket& p)
 {
     onKrokWykonany(p.w, p.y, p.e, p.u, p.k, p.P, p.I, p.D);
+} //  prawdopodobnie bedzie nie potrzebne pozniej
+//IDK
+void MainWindow::onOutputReceived(double y)
+{
+    symulator.ustawYsieciowe(y);
 }
 
 void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
@@ -967,19 +1086,27 @@ void MainWindow::wyslijConfigPacket()
         ui->spinBOX_WzmocK->value(),
         ui->spinBOX_Ti->value(),
         ui->spinBOX_Td->value(),
+        RegulatorPID::Wew, //place holder dodac obsluge trybu calki FIX
+        -10.0, 10.0, //FIX
         ui->spinBOX_Amplituda->value(),
         ui->spinBOX_Czstotliwosc->value(),
         ui->spinBox_Wypelnienie->value(),
         ui->SpinBox_Stala->value(),
         ui->spinBOX_Interwal->value(),
+        GeneratorSygnalu::PROSTOKAT, //FIX
         aktualnyWektorA,
         aktualnyWektorB,
         aktualneOpoznienie,
         aktualnySzum,
-        arx_ograniczenia
+        arx_ograniczenia,
+        arx_yMin,
+        arx_yMax
         );
-
+    if(client){
     client->sendConfig(c);
+    }else if(server){
+        //server->sendConfig(c); FIX
+    }
 }
 
 void MainWindow::wyslijStepPacket(double w, double y, double e, double u, int k, double P, double I, double D)

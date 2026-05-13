@@ -17,9 +17,11 @@ SOURCES += \
 
 HEADERS += \
     ConfigPacket.h \
+    ControlPacket.h \
     GeneratorSygnalu.h \
     MenedzerKonfiguracji.h \
     ModelARX.h \
+    OutputPacket.h \
     ProstyUAR.h \
     RegulatorPID.h \
     StepPacket.h \

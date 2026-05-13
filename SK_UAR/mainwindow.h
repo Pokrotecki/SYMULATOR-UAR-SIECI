@@ -69,6 +69,10 @@ private slots:
 
     void on_radio_przed_clicked();
 
+    //IDK na potrzeby wymiany liczenia jednego sygnalu
+    void onSterowanieReceived(double u, double w);
+    void onOutputReceived(double y);
+
 private:
     Ui::MainWindow *ui;
     MenedzerKonfiguracji menedzerKonfig;
@@ -140,9 +144,10 @@ private:
     void uruchomSerwer();
     void disconnectNetwork();
 
-    void statusPolaczeniaOK();
-    void statusPolaczeniaBrak();
+    //void statusPolaczeniaOK();
+    //void statusPolaczeniaBrak();
     void ukryjStatusPolaczenia();
+    void aktualizujStatusSieci();
 
     void onStepPacketReceivedClient(const StepPacket& p);
     void onConfigPacketReceivedServer(const ConfigPacket& c);

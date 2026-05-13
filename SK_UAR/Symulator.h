@@ -7,6 +7,7 @@
 #include "ProstyUAR.h"
 #include "RegulatorPID.h"
 #include <vector>
+#include <QElapsedTimer>
 
 class SymulatorUAR : public QObject
 {
@@ -22,6 +23,15 @@ private:
     // STAN SYMULACJI
     int k;//krok
     double w, e, u, y;//wartość zadana,uchyb regulacji,sygnał sterujący, wyjście obiektu
+
+    //IDK NA POTRZEBY TRYBU SIECIOWEGO
+    double ostatnieYsieciowe;
+    bool oczekiwanieNaY;
+    double ostatniePoprawneU;
+    bool trybSieciowyRegulator;
+    bool ostatniPakietNaCzas;
+    int liczbaSpoznionychPakietow;
+    QElapsedTimer timerPakietu;
 
     // ZEGAR
     bool symuluj;
@@ -44,6 +54,11 @@ public:
         , e(0.0)
         , u(0.0)
         , y(0.0)
+        , ostatnieYsieciowe(0.0) //IDK
+        , oczekiwanieNaY(false) //IDK
+        , trybSieciowyRegulator(false) //IDK
+        , ostatniPakietNaCzas(true) //IDK
+        , liczbaSpoznionychPakietow(0) //IDK
         , symuluj(false)
         , interwalMs(200)
     {
@@ -94,6 +109,7 @@ public:
     void setPID_Td(double td) { pid.setTd(td); }
     void setPID_T(double t) { pid.setT(t); }
     void setPID_TypCalki(RegulatorPID::LiczCalk typ) { pid.setLiczCalk(typ); }
+    void PID_resetCalki(){pid.reset_calki();}
 
     // ARX
     void setARX(const std::vector<double> &a,
@@ -129,6 +145,9 @@ public:
     double getUchyb() const { return e; }
     double getSterowanie() const { return u; }
     double getWyjscie() const { return y; }
+    //na potrzeby komunikacji sieciowej
+    bool czyPakietyNaCzas() const { return ostatniPakietNaCzas;}
+    int getLiczbaSpoznien() const {return liczbaSpoznionychPakietow; }
 
     int getInterwalMs() const { return interwalMs; }
     void setInterwalMs(int ms)
@@ -145,23 +164,116 @@ public:
     double getI() const { return pid.I; }
     double getD() const { return pid.D; }
 
+    //IDK
+    double symulujObiekt(double uSterujace)
+    {
+        y = arx.symuluj(uSterujace);
+        return y;
+    }
+    void ustawYsieciowe(double nowey)
+    {
+        ostatnieYsieciowe = nowey;
+        oczekiwanieNaY = false;
+    }
+
+    bool czyOczekiwanieNaY() const
+    {
+        return oczekiwanieNaY;
+    }
+    void setTrybSieciowyRegulator(bool v)
+    {
+        trybSieciowyRegulator = v;
+    }
+    void krokSieciowyObiektu(double uSterujace, double wartoscZadana){
+        u = uSterujace;
+        w = wartoscZadana;
+
+        y = arx.symuluj(u);
+
+        e = w - y;
+
+        emit krokWykonany(
+            w,
+            y,
+            e,
+            u,
+            k,
+            0.0,
+            0.0,
+            0.0
+            );
+
+        k++;
+    }
+
 signals:
     //emitowanie sygnałów dla GUI
     void krokWykonany(double w, double y, double e, double u, int k, double P, double I, double D);
+
+    //IDK
+    void wyslijSterowanie(double u, double w);
 
 private slots:
     void Tick()
     {
         if (!symuluj)
             return;
-        //wykoanienie kroku
-        uar.krok(w, e, u, y, generator, k);
-        //pobranie składniowych regulatora
+
+        //TRYB LOKALNY IDK dodane if i return
+
+        if (!trybSieciowyRegulator)
+        {
+            //wykoanienie kroku
+            uar.krok(w, e, u, y, generator, k);
+            //pobranie składniowych regulatora
+            double wartP = getP();
+            double wartI = getI();
+            double wartD = getD();
+            //wysyłanie do GUI
+            emit krokWykonany(w, y, e, u, k, wartP, wartI, wartD); //emitujemy dane
+
+            k++;
+
+            return;
+        }
+
+        //TRYB REGULATORA SIECIOWEGO
+
+        if (oczekiwanieNaY)
+        {
+            ostatniPakietNaCzas = false;
+            liczbaSpoznionychPakietow++;
+        }
+        else
+        {
+            ostatniPakietNaCzas = true;
+        }
+
+        // jeśli poprzednie y jeszcze nie przyszło pracujemy dalej na ostatnim dostępnym
+        y = ostatnieYsieciowe;
+
+        w = generator.generuj(k);
+
+        // uchyb
+        e = w - y;
+
+        // NOWY PID TYLKO GDY PRZYSZLA ODPOWIEDz
+        if (!oczekiwanieNaY)
+        {
+            u = pid.symuluj(e);
+
+            oczekiwanieNaY = true;
+
+            emit wyslijSterowanie(u, w);
+        }
+
         double wartP = getP();
         double wartI = getI();
         double wartD = getD();
-        //wysyłanie do GUI
-        emit krokWykonany(w, y, e, u, k, wartP, wartI, wartD); //emitujemy dane
+
+        oczekiwanieNaY = true;
+
+        emit krokWykonany(w, y, e, u, k, wartP, wartI, wartD);
 
         k++;
     }

@@ -2,7 +2,7 @@
 #define STEPPACKET_H
 #pragma once
 #include <QDataStream>
-
+//raczej calosc do usuniecia ale narazie zostawiam
 struct StepPacket {
     double w, y, e, u;
     int k;
