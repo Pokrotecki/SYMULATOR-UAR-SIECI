@@ -22,6 +22,9 @@ struct ConfigPacket
     bool ograniczenia;
 
     double yMin, yMax;
+
+    int interwalMs;
+    double oknoCzasowe;
 };
 
 // SERIALIZACJA
@@ -40,8 +43,9 @@ inline QDataStream& operator<<(QDataStream& out, const ConfigPacket& c)
 
         << c.ograniczenia
 
-        << c.yMin << c.yMax;
+        << c.yMin << c.yMax
 
+        << c.interwalMs<<c.oknoCzasowe;
 
     return out;
 }
@@ -64,7 +68,9 @@ inline QDataStream& operator>>(QDataStream& in, ConfigPacket& c)
 
         >> c.ograniczenia
 
-        >> c.yMin >> c.yMax;
+        >> c.yMin >> c.yMax
+
+        >> c.interwalMs>>c.oknoCzasowe;
 
     c.arxA = std::vector<double>(a.begin(), a.end());
     c.arxB = std::vector<double>(b.begin(), b.end());
@@ -77,7 +83,7 @@ inline ConfigPacket makeConfigPacket(double Kp, double Ti, double Td, RegulatorP
                                      double A, double TRZ, double P, double S, double TT, GeneratorSygnalu::Tryb trybGeneratora,
                                      const std::vector<double>& arxA, const std::vector<double>& arxB,
                                      int opoznienie, double szum, bool ograniczenia,
-                                     double yMin, double yMax)
+                                     double yMin, double yMax, int interwalMs, double oknoCzasowe)
 {
     ConfigPacket c;
     c.Kp = Kp;
@@ -104,6 +110,9 @@ inline ConfigPacket makeConfigPacket(double Kp, double Ti, double Td, RegulatorP
 
     c.yMin = yMin;
     c.yMax = yMax;
+
+    c.interwalMs = interwalMs;
+    c.oknoCzasowe = oknoCzasowe;
 
     return c;
 }

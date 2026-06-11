@@ -242,7 +242,7 @@ private slots:
             ostatniPakietNaCzas = false;
             liczbaSpoznionychPakietow++;
 
-            if (liczbaSpoznionychPakietow >= 4)
+            if (liczbaSpoznionychPakietow >= 10)
             {
                 emit timeoutSieci();
                 return;

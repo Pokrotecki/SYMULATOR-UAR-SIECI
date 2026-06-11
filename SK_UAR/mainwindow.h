@@ -94,7 +94,7 @@ private:
 
     quint32 wyslanySeq = 0;  // seq który został wysłany
     quint32 licznikSpoznien = 0;
-    static const int MAX_SPOZNIEN = 4;  // po 4 z rzędu - tryb lokalny
+    static const int MAX_SPOZNIEN = 10;  // po 4 z rzędu - tryb lokalny
     bool pakietNaCzas = true;
 
     //  Wykresy i Serie

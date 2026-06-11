@@ -305,6 +305,10 @@ void MainWindow::on_spinBoxOknoczasowe_editingFinished()
         uchybX->setRange(minX, maxX);
         regX->setRange(minX, maxX);
     }
+    if(Tryb == regulator && client)
+    {
+        wyslijConfigPacket();
+    }
 }
 
 // CZYSZCZENIE WYKRESÓW
@@ -565,6 +569,8 @@ void MainWindow::ustawARXDane(const std::vector<double> &a,
     symulator.setPID_Ograniczenia(aktywne);
 
 
+    if(Tryb == regulator && client)
+        wyslijConfigPacket();
 }
 
 void MainWindow::on_Konf_ARX_Button_clicked()
@@ -579,7 +585,7 @@ void MainWindow::on_Konf_ARX_Button_clicked()
     arxwindow->raise();
     arxwindow->activateWindow();
 
-    if(Tryb == regulator && server) //IDK czy dobre miejsce
+    if(Tryb == regulator && client) //IDK czy dobre miejsce
     {
         wyslijConfigPacket();
     }
@@ -1085,11 +1091,36 @@ void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
     symulator.setGeneratorTRZ(c.TRZ);
     symulator.setGeneratorP(c.P);
     symulator.setGeneratorS(c.S);
-    symulator.setGeneratorTT(c.TT);
+    //symulator.setGeneratorTT(c.TT); powielone pozniej?
 
     symulator.setARX(c.arxA, c.arxB, c.opoznienie, c.szum);
     symulator.setARX_Ograniczenia(c.ograniczenia);
     symulator.setPID_Ograniczenia(c.ograniczenia);
+
+    // te same 3 operacje co w editingFinished narazie brak lepszego pomyslu poza powieleniem ich
+    symulator.setGeneratorTT(c.interwalMs);
+    symulator.setInterwalMs(c.interwalMs);
+    symulator.setPID_T(c.interwalMs / 1000.0);
+    ui->spinBOX_Interwal->setValue(c.interwalMs);  // refresh UI
+
+    // te same operacje co w on_spinBoxOknoczasowe_editingFinished
+    doceloweOknoCzasowe = c.oknoCzasowe;
+    ui->spinBoxOknoczasowe->setValue(c.oknoCzasowe);  // refreshh UI
+    //aktualnaSzerokoscOkna = c.oknoCzasowe;
+
+    double t = aktualnyCzasSymulacji;
+    if (t > 0) {
+        double minX = 0;
+        double maxX = std::max(t, doceloweOknoCzasowe);
+        if (t > doceloweOknoCzasowe) {
+            minX = t - doceloweOknoCzasowe;
+            maxX = t;
+        }
+        mainX->setRange(minX, maxX);
+        pidX->setRange(minX, maxX);
+        uchybX->setRange(minX, maxX);
+        regX->setRange(minX, maxX);
+    }
 }
 
 void MainWindow::wyslijSterowanie(double u, double w)
@@ -1119,7 +1150,9 @@ void MainWindow::wyslijConfigPacket()
         aktualnySzum,
         arx_ograniczenia,
         arx_yMin,
-        arx_yMax
+        arx_yMax,
+        ui->spinBOX_Interwal->value(),
+        ui->spinBoxOknoczasowe->value()
         );
     if(client){
     client->sendConfig(c);
