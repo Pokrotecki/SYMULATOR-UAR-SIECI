@@ -18,7 +18,7 @@ public:
 
     void sendConfig(const ConfigPacket& c);
     //IDK
-    void sendControl(double u, double w);
+    void sendControl(quint32 seq, double u, double w);
     QTcpSocket* getSocket() { return &socket; }
 
 signals:
@@ -26,7 +26,7 @@ signals:
     void disconnected();
     void stepReceived(const StepPacket& p);
     //IDK
-    void outputReceived(double y);
+    void outputReceived(quint32 seq, double y);
 
 private slots:
     void onReadyRead();

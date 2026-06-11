@@ -29,7 +29,7 @@ signals:
     void disconnected();
     void configReceived(const ConfigPacket& c);
     //IDK
-    void sterowanieReceived(double u, double w);
+    void sterowanieReceived(quint32 seq, double u, double w);
     //void controlReceived(double u);
 
 private slots:

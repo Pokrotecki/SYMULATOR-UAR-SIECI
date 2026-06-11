@@ -59,6 +59,7 @@ private slots:
     void on_spinBox_Wypelnienie_editingFinished();
     void on_SpinBox_Stala_editingFinished();
     void on_spinBoxOknoczasowe_editingFinished();
+    //sieciowe
     void wyslijConfigPacket();
     void wyslijStepPacket(double w, double y, double e, double u, int k, double P, double I, double D);
 
@@ -70,8 +71,8 @@ private slots:
     void on_radio_przed_clicked();
 
     //IDK na potrzeby wymiany liczenia jednego sygnalu
-    void onSterowanieReceived(double u, double w);
-    void onOutputReceived(double y);
+    void onSterowanieReceived(quint32 seq, double u, double w);
+    void onOutputReceived(quint32 seq, double y);
 
 private:
     Ui::MainWindow *ui;
@@ -89,6 +90,11 @@ private:
     tryb Tryb;
     Server* server=nullptr;
     Client* client=nullptr;
+
+    quint32 oczekiwanySeq = 0;  // seq który został wysłany
+    quint32 licznikSpoznien = 0;
+    static const int MAX_SPOZNIEN = 4;  // po 4 z rzędu - tryb lokalny
+    bool pakietNaCzas = true;
 
     //  Wykresy i Serie
     QLineSeries *seriaP;
@@ -151,6 +157,8 @@ private:
 
     void onStepPacketReceivedClient(const StepPacket& p);
     void onConfigPacketReceivedServer(const ConfigPacket& c);
+
+    void wyslijSterowanie(double u, double w);
 };
 
 #endif // MAINWINDOW_H

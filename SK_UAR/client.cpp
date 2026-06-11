@@ -28,6 +28,8 @@ Client::Client(const QString& host, quint16 port, QObject* parent)
             });
 
     socket.connectToHost(host, port);
+
+    socket.setSocketOption(QAbstractSocket::LowDelayOption, 1);
 }
 
 void Client::sendConfig(const ConfigPacket& c)
@@ -78,18 +80,20 @@ void Client::onReadyRead()
             OutputPacket p;
             in >> p;
 
-            emit outputReceived(p.y);
+            emit outputReceived(p.seq, p.y);
         }
     }
 }
 
 //IDK
-void Client::sendControl(double u, double w)
+void Client::sendControl(quint32 seq, double u, double w)
 {
     QByteArray buf;
     QDataStream out(&buf, QIODevice::WriteOnly);
 
+
     ControlPacket p;
+    p.seq = seq;
     p.u = u;
     p.w = w;
 

@@ -833,7 +833,7 @@ void MainWindow::uruchomSerwer()
 }
 
 //IDK wyliczanie glownego sterowania
-void MainWindow::onSterowanieReceived(double u, double w)
+void MainWindow::onSterowanieReceived(quint32 seq , double u, double w)
 {
     qDebug() << "MAINWINDOW: liczę obiekt dla u =" << u;
 
@@ -842,6 +842,7 @@ void MainWindow::onSterowanieReceived(double u, double w)
 
     OutputPacket p;
     //p.y = y;
+    p.seq = seq; //echo kroku (to smao)
     p.y = symulator.getWyjscie();
 
     server->sendOutput(p);
@@ -890,8 +891,7 @@ void MainWindow::uruchomKlienta()
 
     //connect(client, &Client::stepReceived,this, &MainWindow::onStepPacketReceivedClient); IDK to raczej nie potrzebne
     //IDK
-    connect(&symulator, &SymulatorUAR::wyslijSterowanie,
-            client, &Client::sendControl);
+    connect(&symulator, &SymulatorUAR::wyslijSterowanie, this, &MainWindow::wyslijSterowanie);
     //IDK zmiana sposobu wyliczania symulacji w symulatorze
     symulator.setTrybSieciowyRegulator(true);
     //IDK
@@ -1058,9 +1058,19 @@ void MainWindow::onStepPacketReceivedClient(const StepPacket& p)
     onKrokWykonany(p.w, p.y, p.e, p.u, p.k, p.P, p.I, p.D);
 } //  prawdopodobnie bedzie nie potrzebne pozniej
 //IDK
-void MainWindow::onOutputReceived(double y)
+void MainWindow::onOutputReceived(quint32 seq ,double y)
 {
+    if (seq != oczekiwanySeq) {
+        // spóźniony lub zduplikowany pakiet - ignoruj
+        qDebug() << "Odrzucono pakiet seq=" << seq
+                 << "oczekiwano=" << oczekiwanySeq;
+        return;
+    }
+    // pakiet na czas
+    licznikSpoznien = 0;
     symulator.ustawYsieciowe(y);
+    pakietNaCzas = true;
+    aktualizujStatusSieci();
 }
 
 void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
@@ -1078,6 +1088,13 @@ void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
     symulator.setARX(c.arxA, c.arxB, c.opoznienie, c.szum);
     symulator.setARX_Ograniczenia(c.ograniczenia);
     symulator.setPID_Ograniczenia(c.ograniczenia);
+}
+
+void MainWindow::wyslijSterowanie(double u, double w)
+{
+    oczekiwanySeq++;
+    pakietNaCzas = false;   // czekanie na odpowiedz z tym seq
+    client->sendControl(oczekiwanySeq, u, w);
 }
 
 void MainWindow::wyslijConfigPacket()

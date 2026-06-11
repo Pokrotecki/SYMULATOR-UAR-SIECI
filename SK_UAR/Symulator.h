@@ -212,6 +212,8 @@ signals:
 
     //IDK
     void wyslijSterowanie(double u, double w);
+    // jezeli za duzo opoznien
+    void timeoutSieci();
 
 private slots:
     void Tick()
@@ -219,62 +221,58 @@ private slots:
         if (!symuluj)
             return;
 
-        //TRYB LOKALNY IDK dodane if i return
-
+        // TRYB LOKALNY
         if (!trybSieciowyRegulator)
         {
-            //wykoanienie kroku
             uar.krok(w, e, u, y, generator, k);
-            //pobranie składniowych regulatora
             double wartP = getP();
             double wartI = getI();
             double wartD = getD();
-            //wysyłanie do GUI
-            emit krokWykonany(w, y, e, u, k, wartP, wartI, wartD); //emitujemy dane
-
+            emit krokWykonany(w, y, e, u, k, wartP, wartI, wartD);
             k++;
-
             return;
         }
 
-        //TRYB REGULATORA SIECIOWEGO
+        // TRYB REGULATORA SIECIOWEGO
 
+        // Sprawdź czy odpowiedź na poprzedni krok wróciła
         if (oczekiwanieNaY)
         {
+            // Y nie wróciło przed kolejnym tickiem - spóźnienie
             ostatniPakietNaCzas = false;
             liczbaSpoznionychPakietow++;
+
+            if (liczbaSpoznionychPakietow >= 4)
+            {
+                emit timeoutSieci();
+                return;
+            }
+
+            // kontynuuj na ostatnim znanym Y
+            y = ostatnieYsieciowe;
         }
         else
         {
+            // Y wróciło na czas
             ostatniPakietNaCzas = true;
+            liczbaSpoznionychPakietow = 0;
+            y = ostatnieYsieciowe;  // użyj świeżego Y które właśnie przyszło
         }
 
-        // jeśli poprzednie y jeszcze nie przyszło pracujemy dalej na ostatnim dostępnym
-        y = ostatnieYsieciowe;
-
+        // Zawsze generuj w i licz PID
         w = generator.generuj(k);
-
-        // uchyb
         e = w - y;
+        u = pid.symuluj(e);
 
-        // NOWY PID TYLKO GDY PRZYSZLA ODPOWIEDz
-        if (!oczekiwanieNaY)
-        {
-            u = pid.symuluj(e);
-
-            oczekiwanieNaY = true;
-
-            emit wyslijSterowanie(u, w);
-        }
+        // Wyślij sterowanie i zaznacz że czekamy na odpowiedź
+        oczekiwanieNaY = true;
+        emit wyslijSterowanie(u, w);
 
         double wartP = getP();
         double wartI = getI();
         double wartD = getD();
 
-        oczekiwanieNaY = true;
-
         emit krokWykonany(w, y, e, u, k, wartP, wartI, wartD);
-
         k++;
     }
 };

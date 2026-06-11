@@ -17,6 +17,8 @@ void Server::onNewConnection()
 {
     socket = server.nextPendingConnection();
 
+    socket->setSocketOption(QAbstractSocket::LowDelayOption, 1);
+
     connect(socket, &QTcpSocket::readyRead,
             this, &Server::onReadyRead);
 
@@ -102,9 +104,9 @@ void Server::onReadyRead()
             ControlPacket p;
             in >> p;
 
-            qDebug() << "SERWER: odebrano u =" << p.u;
+            //qDebug() << "SERWER: odebrano u =" << p.u;
 
-            emit sterowanieReceived(p.u, p.w);
+            emit sterowanieReceived(p.seq, p.u, p.w);
         }
     }
 }
