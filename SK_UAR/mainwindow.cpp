@@ -897,6 +897,8 @@ void MainWindow::uruchomKlienta()
     //IDK
     connect(client, &Client::outputReceived,this, &MainWindow::onOutputReceived);
 
+    connect(&symulator, &SymulatorUAR::timeoutSieci,this, &MainWindow::onTimeoutSieci);
+
     trybRegulatora();
 }
 
@@ -1060,10 +1062,10 @@ void MainWindow::onStepPacketReceivedClient(const StepPacket& p)
 //IDK
 void MainWindow::onOutputReceived(quint32 seq ,double y)
 {
-    if (seq != oczekiwanySeq) {
+    if (seq != wyslanySeq) {
         // spóźniony lub zduplikowany pakiet - ignoruj
         qDebug() << "Odrzucono pakiet seq=" << seq
-                 << "oczekiwano=" << oczekiwanySeq;
+                 << "oczekiwano=" << wyslanySeq;
         return;
     }
     // pakiet na czas
@@ -1092,9 +1094,9 @@ void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
 
 void MainWindow::wyslijSterowanie(double u, double w)
 {
-    oczekiwanySeq++;
+    wyslanySeq++;
     pakietNaCzas = false;   // czekanie na odpowiedz z tym seq
-    client->sendControl(oczekiwanySeq, u, w);
+    client->sendControl(wyslanySeq, u, w);
 }
 
 void MainWindow::wyslijConfigPacket()
@@ -1130,6 +1132,20 @@ void MainWindow::wyslijStepPacket(double w, double y, double e, double u, int k,
 {
     StepPacket p = makeStepPacket(w, y, e, u, k, P, I, D);
     server->sendStep(p);
+}
+
+void MainWindow::onTimeoutSieci()
+{
+    symulator.setTrybSieciowyRegulator(false);
+
+    if (client) { client->deleteLater(); client = nullptr; }
+    if (server) { server->deleteLater(); server = nullptr; }
+
+    trybLokalny();
+
+    QMessageBox::critical(this, "Błąd sieci",
+                          "Brak odpowiedzi przez 4 takty z rzędu.\n"
+                          "Symulacja kontynuowana w trybie lokalnym.");
 }
 
 /*

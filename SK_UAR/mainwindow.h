@@ -62,6 +62,7 @@ private slots:
     //sieciowe
     void wyslijConfigPacket();
     void wyslijStepPacket(double w, double y, double e, double u, int k, double P, double I, double D);
+    void onTimeoutSieci();
 
     //  Główny slot odbierający dane z symulatora
     void onKrokWykonany(double w, double y, double e, double u, int k, double P, double I, double D);
@@ -91,7 +92,7 @@ private:
     Server* server=nullptr;
     Client* client=nullptr;
 
-    quint32 oczekiwanySeq = 0;  // seq który został wysłany
+    quint32 wyslanySeq = 0;  // seq który został wysłany
     quint32 licznikSpoznien = 0;
     static const int MAX_SPOZNIEN = 4;  // po 4 z rzędu - tryb lokalny
     bool pakietNaCzas = true;
