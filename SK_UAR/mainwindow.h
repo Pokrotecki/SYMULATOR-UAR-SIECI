@@ -63,6 +63,9 @@ private slots:
     void wyslijConfigPacket();
     void wyslijStepPacket(double w, double y, double e, double u, int k, double P, double I, double D);
     void onTimeoutSieci();
+    //IDK na potrzeby wymiany liczenia jednego sygnalu
+    void onSterowanieReceived(quint32 seq, double u, double w);
+    void onOutputReceived(quint32 seq, double y);
 
     //  Główny slot odbierający dane z symulatora
     void onKrokWykonany(double w, double y, double e, double u, int k, double P, double I, double D);
@@ -71,9 +74,7 @@ private slots:
 
     void on_radio_przed_clicked();
 
-    //IDK na potrzeby wymiany liczenia jednego sygnalu
-    void onSterowanieReceived(quint32 seq, double u, double w);
-    void onOutputReceived(quint32 seq, double y);
+
 
 private:
     Ui::MainWindow *ui;

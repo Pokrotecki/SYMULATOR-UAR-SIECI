@@ -1077,7 +1077,8 @@ void MainWindow::onOutputReceived(quint32 seq ,double y)
     // pakiet na czas
     licznikSpoznien = 0;
     symulator.ustawYsieciowe(y);
-    pakietNaCzas = true;
+    symulator.setCzyPakietNaCzas(true);
+    //pakietNaCzas = true;
     aktualizujStatusSieci();
 }
 
@@ -1126,7 +1127,8 @@ void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
 void MainWindow::wyslijSterowanie(double u, double w)
 {
     wyslanySeq++;
-    pakietNaCzas = false;   // czekanie na odpowiedz z tym seq
+    symulator.setCzyPakietNaCzas(false);
+    //pakietNaCzas = false;   // czekanie na odpowiedz z tym seq
     client->sendControl(wyslanySeq, u, w);
 }
 
@@ -1181,19 +1183,6 @@ void MainWindow::onTimeoutSieci()
                           "Symulacja kontynuowana w trybie lokalnym.");
 }
 
-/*
- * MASZ TU WKLEJKE KTORA TRZEBA DODAC DO KONTROLEK JAK ZROBISZ PRZESYL KONFIGURACJI
-
-if (Tryb == obiekt)
-{
-    //tutaj funkcja odbierajaca dane
-}
-else if (Tryb == regulator)
-{
-    //tutaj funkcja przesylajaca dane
-}
-
-*/
 
 void MainWindow::on_radio_przed_clicked()
 {
