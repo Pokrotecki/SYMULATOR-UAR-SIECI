@@ -1087,11 +1087,20 @@ void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
     symulator.setPID_Ti(c.Ti);
     symulator.setPID_Td(c.Td);
 
+    ui->spinBOX_WzmocK->setValue(c.Kp);
+    ui->spinBOX_Ti->setValue(c.Ti);
+    ui->spinBOX_Td->setValue(c.Td);
+
     symulator.setGeneratorA(c.A);
     symulator.setGeneratorTRZ(c.TRZ);
     symulator.setGeneratorP(c.P);
     symulator.setGeneratorS(c.S);
     //symulator.setGeneratorTT(c.TT); powielone pozniej?
+
+    ui->spinBOX_Amplituda->setValue(c.A);
+    ui->spinBOX_Czstotliwosc->setValue(c.TRZ);
+    ui->spinBox_Wypelnienie->setValue(c.P);
+    ui->SpinBox_Stala->setValue(c.S);
 
     symulator.setARX(c.arxA, c.arxB, c.opoznienie, c.szum);
     symulator.setARX_Ograniczenia(c.ograniczenia);
