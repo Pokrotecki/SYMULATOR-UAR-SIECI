@@ -84,12 +84,12 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
         "I",
         "D",
         "onTimeoutSieci",
-        "onKrokWykonany",
-        "on_TrybSieciowy_Button_clicked",
-        "on_radio_przed_clicked",
         "onSterowanieReceived",
         "seq",
-        "onOutputReceived"
+        "onOutputReceived",
+        "onKrokWykonany",
+        "on_TrybSieciowy_Button_clicked",
+        "on_radio_przed_clicked"
     };
 
     QtMocHelpers::UintData qt_methods {
@@ -154,23 +154,23 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
         }}),
         // Slot 'onTimeoutSieci'
         QtMocHelpers::SlotData<void()>(45, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'onSterowanieReceived'
+        QtMocHelpers::SlotData<void(quint32, double, double)>(46, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::UInt, 47 }, { QMetaType::Double, 40 }, { QMetaType::Double, 37 },
+        }}),
+        // Slot 'onOutputReceived'
+        QtMocHelpers::SlotData<void(quint32, double)>(48, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::UInt, 47 }, { QMetaType::Double, 38 },
+        }}),
         // Slot 'onKrokWykonany'
-        QtMocHelpers::SlotData<void(double, double, double, double, int, double, double, double)>(46, 2, QMC::AccessPrivate, QMetaType::Void, {{
+        QtMocHelpers::SlotData<void(double, double, double, double, int, double, double, double)>(49, 2, QMC::AccessPrivate, QMetaType::Void, {{
             { QMetaType::Double, 37 }, { QMetaType::Double, 38 }, { QMetaType::Double, 39 }, { QMetaType::Double, 40 },
             { QMetaType::Int, 41 }, { QMetaType::Double, 42 }, { QMetaType::Double, 43 }, { QMetaType::Double, 44 },
         }}),
         // Slot 'on_TrybSieciowy_Button_clicked'
-        QtMocHelpers::SlotData<void()>(47, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(50, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'on_radio_przed_clicked'
-        QtMocHelpers::SlotData<void()>(48, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'onSterowanieReceived'
-        QtMocHelpers::SlotData<void(quint32, double, double)>(49, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::UInt, 50 }, { QMetaType::Double, 40 }, { QMetaType::Double, 37 },
-        }}),
-        // Slot 'onOutputReceived'
-        QtMocHelpers::SlotData<void(quint32, double)>(51, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::UInt, 50 }, { QMetaType::Double, 38 },
-        }}),
+        QtMocHelpers::SlotData<void()>(51, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -219,11 +219,11 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         case 22: _t->wyslijConfigPacket(); break;
         case 23: _t->wyslijStepPacket((*reinterpret_cast<std::add_pointer_t<double>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[6])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[7])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[8]))); break;
         case 24: _t->onTimeoutSieci(); break;
-        case 25: _t->onKrokWykonany((*reinterpret_cast<std::add_pointer_t<double>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[6])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[7])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[8]))); break;
-        case 26: _t->on_TrybSieciowy_Button_clicked(); break;
-        case 27: _t->on_radio_przed_clicked(); break;
-        case 28: _t->onSterowanieReceived((*reinterpret_cast<std::add_pointer_t<quint32>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3]))); break;
-        case 29: _t->onOutputReceived((*reinterpret_cast<std::add_pointer_t<quint32>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2]))); break;
+        case 25: _t->onSterowanieReceived((*reinterpret_cast<std::add_pointer_t<quint32>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3]))); break;
+        case 26: _t->onOutputReceived((*reinterpret_cast<std::add_pointer_t<quint32>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2]))); break;
+        case 27: _t->onKrokWykonany((*reinterpret_cast<std::add_pointer_t<double>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[6])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[7])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[8]))); break;
+        case 28: _t->on_TrybSieciowy_Button_clicked(); break;
+        case 29: _t->on_radio_przed_clicked(); break;
         default: ;
         }
     }

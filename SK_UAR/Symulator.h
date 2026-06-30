@@ -29,7 +29,7 @@ private:
     bool oczekiwanieNaY;
     double ostatniePoprawneU;
     bool trybSieciowyRegulator;
-    bool ostatniPakietNaCzas;
+    bool ostatniPakietNaCzas; // to wysylane z zewnatrz musi byc?
     int liczbaSpoznionychPakietow;
     QElapsedTimer timerPakietu;
 
@@ -148,6 +148,7 @@ public:
     //na potrzeby komunikacji sieciowej
     bool czyPakietyNaCzas() const { return ostatniPakietNaCzas;}
     int getLiczbaSpoznien() const {return liczbaSpoznionychPakietow; }
+    void setCzyPakietNaCzas(bool p){ ostatniPakietNaCzas=p; }
     GeneratorSygnalu::Tryb getGeneratorTryb() const { return generator.getTryb(); }
 
     int getInterwalMs() const { return interwalMs; }
@@ -174,7 +175,7 @@ public:
     void ustawYsieciowe(double nowey)
     {
         ostatnieYsieciowe = nowey;
-        oczekiwanieNaY = false;
+        //oczekiwanieNaY = false;
     }
 
     bool czyOczekiwanieNaY() const
@@ -237,25 +238,26 @@ private slots:
         // TRYB REGULATORA SIECIOWEGO
 
         // Sprawdź czy odpowiedź na poprzedni krok wróciła
-        if (oczekiwanieNaY)
+        // if (oczekiwanienaY)
+        if (ostatniPakietNaCzas)
         {
             // Y nie wróciło przed kolejnym tickiem - spóźnienie
-            ostatniPakietNaCzas = false;
+            //ostatniPakietNaCzas = false;
             liczbaSpoznionychPakietow++;
 
-            if (liczbaSpoznionychPakietow >= 10)
+            if (liczbaSpoznionychPakietow >= 20)
             {
                 emit timeoutSieci();
                 return;
             }
 
             // kontynuuj na ostatnim znanym Y
-            y = ostatnieYsieciowe;
+            //y = ostatnieYsieciowe; tutaj odrzuca, nie odswieza nowego?
         }
         else
         {
             // Y wróciło na czas
-            ostatniPakietNaCzas = true;
+            //ostatniPakietNaCzas = true;
             liczbaSpoznionychPakietow = 0;
             y = ostatnieYsieciowe;  // użyj świeżego Y które właśnie przyszło
         }
@@ -266,7 +268,7 @@ private slots:
         u = pid.symuluj(e);
 
         // Wyślij sterowanie i zaznacz że czekamy na odpowiedź
-        oczekiwanieNaY = true;
+        //oczekiwanieNaY = true;
         emit wyslijSterowanie(u, w);
 
         double wartP = getP();
