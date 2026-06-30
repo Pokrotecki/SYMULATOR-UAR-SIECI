@@ -1023,7 +1023,7 @@ void MainWindow::aktualizujStatusSieci()
         polaczono = (client->getSocket()->state() == QAbstractSocket::ConnectedState);
     }
 
-    // BRAK POŁĄCZENIA
+    // BRAK POŁĄCZENIA | TERAZ PRZY ZERWANIU POLACZENIA PRZECHODZI W TRYB LOKALNY
     if(!polaczono)
     {
         ui->StatusPolaczenia_Label->setText("Brak połączenia");
@@ -1033,6 +1033,26 @@ void MainWindow::aktualizujStatusSieci()
             "border-radius: 8px;"
             "padding: 4px;"
             );
+
+        trybLokalny();
+
+        symulator.setTrybSieciowyRegulator(false);
+
+        if (server)
+        {
+            server->deleteLater();
+            server = nullptr;
+        }
+
+        if (client)
+        {
+            client->deleteLater();
+            client = nullptr;
+        }
+
+        QMessageBox::warning(this, "Połączenie sieciowe",
+                             "Połączenie zostało zerwane.\n"
+                             "Powrót do trybu lokalnego.");
 
         return;
     }
@@ -1077,8 +1097,7 @@ void MainWindow::onOutputReceived(quint32 seq ,double y)
     // pakiet na czas
     licznikSpoznien = 0;
     symulator.ustawYsieciowe(y);
-    symulator.setCzyPakietNaCzas(true);
-    //pakietNaCzas = true;
+    pakietNaCzas = true;
     aktualizujStatusSieci();
 }
 
@@ -1136,25 +1155,33 @@ void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
 void MainWindow::wyslijSterowanie(double u, double w)
 {
     wyslanySeq++;
-    symulator.setCzyPakietNaCzas(false);
-    //pakietNaCzas = false;   // czekanie na odpowiedz z tym seq
+    pakietNaCzas = false;   // czekanie na odpowiedz z tym seq
     client->sendControl(wyslanySeq, u, w);
 }
 
 void MainWindow::wyslijConfigPacket()
 {
+    RegulatorPID::LiczCalk trybCalki;
+    if(ui->radio_pod->isChecked())
+    {
+        trybCalki = RegulatorPID::Zew;
+    }
+    else
+    {
+        trybCalki = RegulatorPID::Wew;
+    }
     ConfigPacket c = makeConfigPacket(
         ui->spinBOX_WzmocK->value(),
         ui->spinBOX_Ti->value(),
         ui->spinBOX_Td->value(),
-        RegulatorPID::Wew, //place holder dodac obsluge trybu calki FIX
-        -10.0, 10.0, //FIX
+        trybCalki, //dodany tryb calki
+        arx_uMin, arx_uMax, //zamienione placeholdery min i max
         ui->spinBOX_Amplituda->value(),
         ui->spinBOX_Czstotliwosc->value(),
         ui->spinBox_Wypelnienie->value(),
         ui->SpinBox_Stala->value(),
         ui->spinBOX_Interwal->value(),
-        GeneratorSygnalu::PROSTOKAT, //FIX
+        symulator.getGeneratorTryb(), //zamieniony placeholder trybu generatora
         aktualnyWektorA,
         aktualnyWektorB,
         aktualneOpoznienie,
@@ -1192,6 +1219,19 @@ void MainWindow::onTimeoutSieci()
                           "Symulacja kontynuowana w trybie lokalnym.");
 }
 
+/*
+ * MASZ TU WKLEJKE KTORA TRZEBA DODAC DO KONTROLEK JAK ZROBISZ PRZESYL KONFIGURACJI
+
+if (Tryb == obiekt)
+{
+    //tutaj funkcja odbierajaca dane
+}
+else if (Tryb == regulator)
+{
+    //tutaj funkcja przesylajaca dane
+}
+
+*/
 
 void MainWindow::on_radio_przed_clicked()
 {

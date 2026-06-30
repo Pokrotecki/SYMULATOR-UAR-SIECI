@@ -49,6 +49,8 @@ template <> constexpr inline auto SymulatorUAR::qt_create_metaobjectdata<qt_meta
         "P",
         "I",
         "D",
+        "wyslijSterowanie",
+        "timeoutSieci",
         "Tick"
     };
 
@@ -58,8 +60,14 @@ template <> constexpr inline auto SymulatorUAR::qt_create_metaobjectdata<qt_meta
             { QMetaType::Double, 3 }, { QMetaType::Double, 4 }, { QMetaType::Double, 5 }, { QMetaType::Double, 6 },
             { QMetaType::Int, 7 }, { QMetaType::Double, 8 }, { QMetaType::Double, 9 }, { QMetaType::Double, 10 },
         }}),
+        // Signal 'wyslijSterowanie'
+        QtMocHelpers::SignalData<void(double, double)>(11, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::Double, 6 }, { QMetaType::Double, 3 },
+        }}),
+        // Signal 'timeoutSieci'
+        QtMocHelpers::SignalData<void()>(12, 2, QMC::AccessPublic, QMetaType::Void),
         // Slot 'Tick'
-        QtMocHelpers::SlotData<void()>(11, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(13, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -84,12 +92,18 @@ void SymulatorUAR::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id
     if (_c == QMetaObject::InvokeMetaMethod) {
         switch (_id) {
         case 0: _t->krokWykonany((*reinterpret_cast<std::add_pointer_t<double>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[6])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[7])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[8]))); break;
-        case 1: _t->Tick(); break;
+        case 1: _t->wyslijSterowanie((*reinterpret_cast<std::add_pointer_t<double>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<double>>(_a[2]))); break;
+        case 2: _t->timeoutSieci(); break;
+        case 3: _t->Tick(); break;
         default: ;
         }
     }
     if (_c == QMetaObject::IndexOfMethod) {
         if (QtMocHelpers::indexOfMethod<void (SymulatorUAR::*)(double , double , double , double , int , double , double , double )>(_a, &SymulatorUAR::krokWykonany, 0))
+            return;
+        if (QtMocHelpers::indexOfMethod<void (SymulatorUAR::*)(double , double )>(_a, &SymulatorUAR::wyslijSterowanie, 1))
+            return;
+        if (QtMocHelpers::indexOfMethod<void (SymulatorUAR::*)()>(_a, &SymulatorUAR::timeoutSieci, 2))
             return;
     }
 }
@@ -113,14 +127,14 @@ int SymulatorUAR::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 2)
+        if (_id < 4)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 2;
+        _id -= 4;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 2)
+        if (_id < 4)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 2;
+        _id -= 4;
     }
     return _id;
 }
@@ -129,5 +143,17 @@ int SymulatorUAR::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 void SymulatorUAR::krokWykonany(double _t1, double _t2, double _t3, double _t4, int _t5, double _t6, double _t7, double _t8)
 {
     QMetaObject::activate<void>(this, &staticMetaObject, 0, nullptr, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8);
+}
+
+// SIGNAL 1
+void SymulatorUAR::wyslijSterowanie(double _t1, double _t2)
+{
+    QMetaObject::activate<void>(this, &staticMetaObject, 1, nullptr, _t1, _t2);
+}
+
+// SIGNAL 2
+void SymulatorUAR::timeoutSieci()
+{
+    QMetaObject::activate(this, &staticMetaObject, 2, nullptr);
 }
 QT_WARNING_POP
