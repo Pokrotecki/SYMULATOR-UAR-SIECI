@@ -1065,7 +1065,7 @@ void MainWindow::onSterowanieReceived(quint32 seq , double u, double w)
     //qDebug() << "MAINWINDOW: liczę obiekt dla u =" << u;
 
     //double y = symulator.symulujObiekt(u);
-    symulator.krokSieciowyObiektu(u, w);
+
 
     OutputPacket p;
     //p.y = y;
@@ -1073,6 +1073,8 @@ void MainWindow::onSterowanieReceived(quint32 seq , double u, double w)
     p.y = symulator.getWyjscie();
 
     server->sendOutput(p);
+
+    symulator.krokSieciowyObiektu(u, w);
 }
 
 void MainWindow::uruchomKlienta()
