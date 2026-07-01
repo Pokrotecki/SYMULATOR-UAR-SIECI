@@ -194,16 +194,8 @@ public:
 
         e = w - y;
 
-        emit krokWykonany(
-            w,
-            y,
-            e,
-            u,
-            k,
-            0.0,
-            0.0,
-            0.0
-            );
+        //emit krokWykonany(w,y,e,u,k,0.0,0.0,0.0);
+        emit krokObiektu(w, y, k);
 
         k++;
     }
@@ -214,6 +206,7 @@ signals:
 
     //IDK
     void wyslijSterowanie(double u, double w);
+    void krokObiektu(double w, double y, int k);
     // jezeli za duzo opoznien
     void timeoutSieci();
 
@@ -241,6 +234,13 @@ private slots:
         // if (oczekiwanienaY)
         if (ostatniPakietNaCzas)
         {
+            // Y wróciło na czas
+            //ostatniPakietNaCzas = true;
+            liczbaSpoznionychPakietow = 0;
+            y = ostatnieYsieciowe;  // użyj świeżego Y które właśnie przyszło
+        }
+        else
+        {
             // Y nie wróciło przed kolejnym tickiem - spóźnienie
             //ostatniPakietNaCzas = false;
             liczbaSpoznionychPakietow++;
@@ -254,13 +254,7 @@ private slots:
             // kontynuuj na ostatnim znanym Y
             //y = ostatnieYsieciowe; tutaj odrzuca, nie odswieza nowego?
         }
-        else
-        {
-            // Y wróciło na czas
-            //ostatniPakietNaCzas = true;
-            liczbaSpoznionychPakietow = 0;
-            y = ostatnieYsieciowe;  // użyj świeżego Y które właśnie przyszło
-        }
+
 
         // Zawsze generuj w i licz PID
         w = generator.generuj(k);

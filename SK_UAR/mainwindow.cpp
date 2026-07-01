@@ -208,6 +208,7 @@ void MainWindow::czyscStareDane(double aktualnyCzas)
         if(seriaRegulator->count() > 0) seriaRegulator->remove(0);
     }
 }
+/* stara wersja, wolniejsza (?)
 void MainWindow::onKrokWykonany(double w, double y, double e, double u, int k, double P, double I, double D)
 {
     double dt = symulator.getInterwalMs() / 1000.0;
@@ -217,7 +218,7 @@ void MainWindow::onKrokWykonany(double w, double y, double e, double u, int k, d
 
     double t = aktualnyCzasSymulacji;
 
-    // Dodawanie punktow
+    //Dodawanie punktow
     seriaZad->append(t, w);
     seriaRegulowana->append(t, y);
     seriaP->append(t, P);
@@ -245,6 +246,222 @@ void MainWindow::onKrokWykonany(double w, double y, double e, double u, int k, d
         aktualizujStatusSieci();
     }
 }
+*/
+
+void MainWindow::czyscStareDaneSzybka(double aktualnyCzas)
+{
+    if (!seriaZad || seriaZad->count() == 0) return;
+
+    double maxHistoria = ui->spinBoxOknoczasowe->maximum();
+    double progOdciecia = aktualnyCzas - maxHistoria - MARGINES_BEZPIECZENSTWA;
+
+    // Policz ile punktów wypadło poza bufor
+    int n = 0;
+    int ile = seriaZad->count();
+    while (n < ile && seriaZad->at(n).x() < progOdciecia)
+        ++n;
+
+    if (n == 0) return;
+
+    // Jedno wywołanie zamiast n-krotnego remove(0)
+    seriaZad->removePoints(0, n);
+    seriaRegulowana->removePoints(0, std::min(n, seriaRegulowana->count()));
+    if (seriaP->count()        >= n) seriaP->removePoints(0, n);
+    if (seriaI->count()        >= n) seriaI->removePoints(0, n);
+    if (seriaD->count()        >= n) seriaD->removePoints(0, n);
+    if (seriaUchyb->count()    >= n) seriaUchyb->removePoints(0, n);
+    if (seriaRegulator->count()>= n) seriaRegulator->removePoints(0, n);
+
+    // Rescan zakresów Y — tylko po faktycznym usunięciu punktów
+    auto rescan1 = [](QLineSeries* s, double& mn, double& mx) {
+        mn =  1e18; mx = -1e18;
+        for (int i = 0; i < s->count(); ++i) {
+            double v = s->at(i).y();
+            if (v < mn) mn = v;
+            if (v > mx) mx = v;
+        }
+    };
+    auto merge = [](QLineSeries* s, double& mn, double& mx) {
+        for (int i = 0; i < s->count(); ++i) {
+            double v = s->at(i).y();
+            if (v < mn) mn = v;
+            if (v > mx) mx = v;
+        }
+    };
+
+    rescan1(seriaZad,      zakresMain.minVal,   zakresMain.maxVal);
+    merge(seriaRegulowana, zakresMain.minVal,   zakresMain.maxVal);
+    zakresMain.brudny = true;
+
+    rescan1(seriaP,        zakresPid.minVal,    zakresPid.maxVal);
+    merge(seriaI,          zakresPid.minVal,    zakresPid.maxVal);
+    merge(seriaD,          zakresPid.minVal,    zakresPid.maxVal);
+    zakresPid.brudny = true;
+
+    rescan1(seriaUchyb,    zakresUchyb.minVal,  zakresUchyb.maxVal);
+    zakresUchyb.brudny = true;
+
+    rescan1(seriaRegulator,zakresReg.minVal,    zakresReg.maxVal);
+    zakresReg.brudny = true;
+}
+
+void MainWindow::onKrokObiektu(double w, double y, int k) // FIX wydzielic pozniej wspolna funkcjonalnosc do osobnej funckji - duplikacja duzej ilosci kodu, ++++ cos nie dziala skalowanie osi Y
+{
+    double dt = symulator.getInterwalMs() / 1000.0;
+    if (k == 0) aktualnyCzasSymulacji = 0.0;
+    else        aktualnyCzasSymulacji += dt;
+    double t = aktualnyCzasSymulacji;
+
+    // Tylko dwie serie
+    seriaZad->append(t, w);
+    seriaRegulowana->append(t, y);
+
+    // Aktualizuj zakres Y przyrostowo
+    if (w < zakresMain.minVal) { zakresMain.minVal = w; zakresMain.brudny = true; }
+    if (w > zakresMain.maxVal) { zakresMain.maxVal = w; zakresMain.brudny = true; }
+    if (y < zakresMain.minVal) { zakresMain.minVal = y; zakresMain.brudny = true; }
+    if (y > zakresMain.maxVal) { zakresMain.maxVal = y; zakresMain.brudny = true; }
+
+    // Oś X
+    if (aktualnaSzerokoscOkna < doceloweOknoCzasowe)
+        aktualnaSzerokoscOkna = std::min(doceloweOknoCzasowe, aktualnaSzerokoscOkna + 0.2);
+    else if (aktualnaSzerokoscOkna > doceloweOknoCzasowe)
+        aktualnaSzerokoscOkna = std::max(doceloweOknoCzasowe, aktualnaSzerokoscOkna - 0.2);
+
+    double poczatek = (t > aktualnaSzerokoscOkna) ? (t - aktualnaSzerokoscOkna) : 0.0;
+    if (mainX) mainX->setRange(poczatek, t);
+
+    // Czyszczenie starych danych — tylko seriaZad i seriaRegulowana
+    if (seriaZad->count() > 0) {
+        double maxHistoria = ui->spinBoxOknoczasowe->maximum();
+        double prog = t - maxHistoria - MARGINES_BEZPIECZENSTWA;
+        int n = 0;
+        while (n < seriaZad->count() && seriaZad->at(n).x() < prog) ++n;
+        if (n > 0) {
+            seriaZad->removePoints(0, n);
+            seriaRegulowana->removePoints(0, std::min(n, seriaRegulowana->count()));
+            // Po usunięciu — rescan tylko tych dwóch serii, co 20 kroków
+            zakresMain.brudny = true;
+        }
+    }
+
+    if (k % 20 == 0 && zakresMain.brudny) {
+        zakresMain.minVal = 1e18; zakresMain.maxVal = -1e18;
+        for (int i = 0; i < seriaZad->count(); ++i) {
+            double v = seriaZad->at(i).y();
+            if (v < zakresMain.minVal) zakresMain.minVal = v;
+            if (v > zakresMain.maxVal) zakresMain.maxVal = v;
+        }
+        for (int i = 0; i < seriaRegulowana->count(); ++i) {
+            double v = seriaRegulowana->at(i).y();
+            if (v < zakresMain.minVal) zakresMain.minVal = v;
+            if (v > zakresMain.maxVal) zakresMain.maxVal = v;
+        }
+    }
+
+    if (mainY && zakresMain.brudny && k % 2 == 0) {
+        double margines = (zakresMain.maxVal - zakresMain.minVal) * 0.1;
+        if (margines < 0.01) margines = 1.0;
+        mainY->setRange(zakresMain.minVal - margines, zakresMain.maxVal + margines);
+        zakresMain.brudny = false;
+    }
+
+    //if (Tryb != tryb::lokalny && k % 10 == 0)
+    //    aktualizujStatusSieci();
+}
+
+void MainWindow::onKrokWykonany(double w, double y, double e,
+                                double u, int k,
+                                double P, double I, double D)
+{
+    double dt = symulator.getInterwalMs() / 1000.0;
+    if (k == 0) aktualnyCzasSymulacji = 0.0;
+    else        aktualnyCzasSymulacji += dt;
+    double t = aktualnyCzasSymulacji;
+
+    // 1. Dodaj punkty (zawsze, każdy krok)
+    seriaZad->append(t, w);
+    seriaRegulowana->append(t, y);
+    seriaP->append(t, P);
+    seriaI->append(t, I);
+    seriaD->append(t, D);
+    seriaUchyb->append(t, e);
+    seriaRegulator->append(t, u);
+
+    // 2. Aktualizuj zakresy Y przyrostowo (bez skanowania serii)
+    auto aktualizujY = [](ZakresY& z, std::initializer_list<double> vals) {
+        for (double v : vals) {
+            if (v < z.minVal) { z.minVal = v; z.brudny = true; }
+            if (v > z.maxVal) { z.maxVal = v; z.brudny = true; }
+        }
+    };
+    aktualizujY(zakresMain,  {w, y});
+    aktualizujY(zakresPid,   {P, I, D});
+    aktualizujY(zakresUchyb, {e});
+    aktualizujY(zakresReg,   {u});
+
+    // 3. Usuń stare punkty (jedno removePoints zamiast pętli remove(0))
+    czyscStareDaneSzybka(t);
+
+    // 4. Oś X — co krok (tania operacja, samo setRange)
+    if (aktualnaSzerokoscOkna < doceloweOknoCzasowe)
+        aktualnaSzerokoscOkna = std::min(doceloweOknoCzasowe,
+                                         aktualnaSzerokoscOkna + 0.2);
+    else if (aktualnaSzerokoscOkna > doceloweOknoCzasowe)
+        aktualnaSzerokoscOkna = std::max(doceloweOknoCzasowe,
+                                         aktualnaSzerokoscOkna - 0.2);
+
+    double poczatek = (t > aktualnaSzerokoscOkna)
+                          ? (t - aktualnaSzerokoscOkna) : 0.0;
+
+    if (mainX)  mainX->setRange(poczatek, t);
+    if (pidX)   pidX->setRange(poczatek, t);
+    if (uchybX) uchybX->setRange(poczatek, t);
+    if (regX)   regX->setRange(poczatek, t);
+
+    // 5. Oś Y — co 2 kroki i tylko gdy dane się zmieniły
+    if (k % 2 == 0) {
+        auto zastosujY = [](QValueAxis* os, ZakresY& z) {
+            if (!os || !z.brudny) return;
+            double margines = (z.maxVal - z.minVal) * 0.1;
+            if (margines < 0.01) margines = 1.0;
+            os->setRange(z.minVal - margines, z.maxVal + margines);
+            z.brudny = false;
+        };
+        zastosujY(mainY,  zakresMain);
+        zastosujY(pidY,   zakresPid);
+        zastosujY(uchybY, zakresUchyb);
+        zastosujY(regY,   zakresReg);
+    }
+
+    // 6. Status sieci
+    //if (Tryb != tryb::lokalny)
+    //   aktualizujStatusSieci();
+}
+
+void MainWindow::wyczyscWykresy()
+{
+    seriaZad->clear();
+    seriaRegulowana->clear();
+    seriaP->clear();
+    seriaI->clear();
+    seriaD->clear();
+    seriaUchyb->clear();
+    seriaRegulator->clear();
+
+    aktualnyCzasSymulacji = 0.0;
+
+    zakresMain  = { 1e18, -1e18, false };
+    zakresPid   = { 1e18, -1e18, false };
+    zakresUchyb = { 1e18, -1e18, false };
+    zakresReg   = { 1e18, -1e18, false };
+
+    mainX->setRange(0, doceloweOknoCzasowe);
+    pidX->setRange(0, doceloweOknoCzasowe);
+    uchybX->setRange(0, doceloweOknoCzasowe);
+    regX->setRange(0, doceloweOknoCzasowe);
+}
+
 void MainWindow::dopasujSkalePionowa(QValueAxis *osY, QList<QLineSeries*> serie)
 {
     double minVal = 999999.0;
@@ -312,6 +529,7 @@ void MainWindow::on_spinBoxOknoczasowe_editingFinished()
 }
 
 // CZYSZCZENIE WYKRESÓW
+/* stara wersja
 void MainWindow::wyczyscWykresy()
 {
     seriaZad->clear();
@@ -330,6 +548,7 @@ void MainWindow::wyczyscWykresy()
     uchybX->setRange(0, doceloweOknoCzasowe);
     regX->setRange(0, doceloweOknoCzasowe);
 }
+*/
 
 MainWindow::~MainWindow()
 {
@@ -623,7 +842,7 @@ void MainWindow::on_Zapisz_Button_clicked()
 }
 
 /*
-void MainWindow::on_Wczytaj_Button_clicked()
+void MainWindow::on_Wczytaj_Button_clicked() //stara wersja do usuniecia po przejsciu checklisty calej
 {
     QString sciezka = QFileDialog::getOpenFileName(this, "Wczytaj konfigurację", "", "JSON (*.json)");
         if (sciezka.isEmpty()) return;
@@ -793,6 +1012,7 @@ void MainWindow::on_TrybSieciowy_Button_clicked()
         }
     }
 }
+
 void MainWindow::uruchomSerwer()
 {
     bool ok;
@@ -821,8 +1041,9 @@ void MainWindow::uruchomSerwer()
     connect(server, &Server::connectedOk,this, &MainWindow::aktualizujStatusSieci);
     connect(server, &Server::disconnected,this, &MainWindow::aktualizujStatusSieci);
 
-    connect(server, &Server::configReceived,
-            this, &MainWindow::onConfigPacketReceivedServer);
+    connect(server, &Server::configReceived, this, &MainWindow::onConfigPacketReceivedServer);
+    // update wykresow dla obiektu
+    connect(&symulator, &SymulatorUAR::krokObiektu,this, &MainWindow::onKrokObiektu);
     //connect(&symulator, &SymulatorUAR::krokWykonany, this, &MainWindow::wyslijStepPacket); IDK to nie bo wysyla cale dane a obiekt ma lokalnie se liczyc
     // IDK dodane aby wyliczac pomiedzy oboma info
     connect(server,&Server::sterowanieReceived,this,&MainWindow::onSterowanieReceived);
@@ -841,7 +1062,7 @@ void MainWindow::uruchomSerwer()
 //IDK wyliczanie glownego sterowania
 void MainWindow::onSterowanieReceived(quint32 seq , double u, double w)
 {
-    qDebug() << "MAINWINDOW: liczę obiekt dla u =" << u;
+    //qDebug() << "MAINWINDOW: liczę obiekt dla u =" << u;
 
     //double y = symulator.symulujObiekt(u);
     symulator.krokSieciowyObiektu(u, w);
@@ -1034,26 +1255,6 @@ void MainWindow::aktualizujStatusSieci()
             "padding: 4px;"
             );
 
-        trybLokalny();
-
-        symulator.setTrybSieciowyRegulator(false);
-
-        if (server)
-        {
-            server->deleteLater();
-            server = nullptr;
-        }
-
-        if (client)
-        {
-            client->deleteLater();
-            client = nullptr;
-        }
-
-        QMessageBox::warning(this, "Połączenie sieciowe",
-                             "Połączenie zostało zerwane.\n"
-                             "Powrót do trybu lokalnego.");
-
         return;
     }
 
@@ -1090,16 +1291,16 @@ void MainWindow::onOutputReceived(quint32 seq ,double y)
 {
     if (seq != wyslanySeq) {
         // spóźniony lub zduplikowany pakiet - ignoruj
-        qDebug() << "Odrzucono pakiet seq=" << seq
-                 << "oczekiwano=" << wyslanySeq;
+        //qDebug() << "Odrzucono pakiet seq=" << seq<< "oczekiwano=" << wyslanySeq;
         return;
     }
     // pakiet na czas
+    //qDebug() << "zaakceptowano pakiet seq=" << seq<< "oczekiwano=" << wyslanySeq;
     licznikSpoznien = 0;
     symulator.ustawYsieciowe(y);
     symulator.setCzyPakietNaCzas(true);
     //pakietNaCzas = true;
-    aktualizujStatusSieci();
+    //aktualizujStatusSieci();
 }
 
 void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
@@ -1197,7 +1398,7 @@ void MainWindow::wyslijConfigPacket()
     if(client){
     client->sendConfig(c);
     }else if(server){
-        //server->sendConfig(c); FIX
+        //przesyl arx aby lokalnie byly dane? FIX
     }
 }
 

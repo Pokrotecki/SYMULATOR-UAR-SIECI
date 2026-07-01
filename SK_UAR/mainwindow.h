@@ -66,6 +66,8 @@ private slots:
     //IDK na potrzeby wymiany liczenia jednego sygnalu
     void onSterowanieReceived(quint32 seq, double u, double w);
     void onOutputReceived(quint32 seq, double y);
+    void czyscStareDaneSzybka(double aktualnyCzas);
+    void onKrokObiektu(double w, double y, int k);
 
     //  Główny slot odbierający dane z symulatora
     void onKrokWykonany(double w, double y, double e, double u, int k, double P, double I, double D);
@@ -97,6 +99,11 @@ private:
     quint32 licznikSpoznien = 0;
     static const int MAX_SPOZNIEN = 10;  // po 4 z rzędu - tryb lokalny
     bool pakietNaCzas = true;
+    struct ZakresY {
+        double minVal =  1e18;
+        double maxVal = -1e18;
+        bool brudny = false;
+    } zakresMain, zakresPid, zakresUchyb, zakresReg;
 
     //  Wykresy i Serie
     QLineSeries *seriaP;
