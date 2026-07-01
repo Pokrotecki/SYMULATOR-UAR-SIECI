@@ -1231,6 +1231,7 @@ void MainWindow::aktualizujStatusSieci()
     ui->StatusPolaczenia_Label->show();
 
     bool polaczono = false;
+    bool polaczonoraz = false;
 
     // SERVER
     if(server && server->getSocket())
@@ -1247,13 +1248,40 @@ void MainWindow::aktualizujStatusSieci()
     // BRAK POŁĄCZENIA
     if(!polaczono)
     {
-        ui->StatusPolaczenia_Label->setText("Brak połączenia");
-        ui->StatusPolaczenia_Label->setStyleSheet(
-            "background-color: red;"
-            "color: white;"
-            "border-radius: 8px;"
-            "padding: 4px;"
-            );
+        if(!polaczonoraz)
+        {
+            ui->StatusPolaczenia_Label->setText("Brak połączenia");
+            ui->StatusPolaczenia_Label->setStyleSheet(
+                "background-color: red;"
+                "color: white;"
+                "border-radius: 8px;"
+                "padding: 4px;"
+                );
+        }
+        else
+        {
+            trybLokalny();
+
+            symulator.setTrybSieciowyRegulator(false);
+
+            if (server)
+            {
+                server->deleteLater();
+                server = nullptr;
+            }
+
+            if (client)
+            {
+                client->deleteLater();
+                client = nullptr;
+            }
+
+            QMessageBox::warning(this, "Połączenie sieciowe",
+                                 "Połączenie zostało zerwane.\n"
+                                 "Powrót do trybu lokalnego.");
+
+            polaczonoraz = false;
+        }
 
         return;
     }
