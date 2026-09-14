@@ -27,6 +27,7 @@ signals:
     void stepReceived(const StepPacket& p);
     //IDK
     void outputReceived(quint32 seq, double y);
+    void configReceived(const ConfigPacket& c);
 
 private slots:
     void onReadyRead();

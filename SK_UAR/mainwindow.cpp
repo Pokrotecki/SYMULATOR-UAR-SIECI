@@ -165,6 +165,14 @@ MainWindow::MainWindow(QWidget *parent)
         );
     // schowanie funkcjonalnosci sieciowej
     ui->StatusPolaczenia_Label->hide();
+
+    // Rysowanie wykresu odseparowane od taktu symulacji/sieci
+    // opozniało inaczej obsluge funkcjonalnosci sieciowej
+    wykresTimer.setInterval(100);
+    connect(&wykresTimer, &QTimer::timeout, this, &MainWindow::odswiezWykresy);
+    // ten sam timer odswieza lampke statusu sieci
+    connect(&wykresTimer, &QTimer::timeout, this, &MainWindow::aktualizujStatusSieci);
+    wykresTimer.start();
 }
 
 void MainWindow::aktualizujZakresOsiX(double krokAnimacji, double wymaganeOkno, double aktualnyCzas)
@@ -252,7 +260,7 @@ void MainWindow::czyscStareDaneSzybka(double aktualnyCzas)
 {
     if (!seriaZad || seriaZad->count() == 0) return;
 
-    double maxHistoria = ui->spinBoxOknoczasowe->maximum();
+    double maxHistoria = aktualnaSzerokoscOkna;
     double progOdciecia = aktualnyCzas - maxHistoria - MARGINES_BEZPIECZENSTWA;
 
     // Policz ile punktów wypadło poza bufor
@@ -305,66 +313,23 @@ void MainWindow::czyscStareDaneSzybka(double aktualnyCzas)
     zakresReg.brudny = true;
 }
 
-void MainWindow::onKrokObiektu(double w, double y, int k) // FIX wydzielic pozniej wspolna funkcjonalnosc do osobnej funckji - duplikacja duzej ilosci kodu, ++++ cos nie dziala skalowanie osi Y
+void MainWindow::onKrokObiektu(double w, double y, double u, int k) // FIX wydzielic pozniej wspolna funkcjonalnosc do osobnej funckji - duplikacja duzej ilosci kodu?
 {
     double dt = symulator.getInterwalMs() / 1000.0;
     if (k == 0) aktualnyCzasSymulacji = 0.0;
     else        aktualnyCzasSymulacji += dt;
     double t = aktualnyCzasSymulacji;
 
-    // Tylko dwie serie
-    seriaZad->append(t, w);
-    seriaRegulowana->append(t, y);
+    // zbuforowanie punktu i aktualizacja zakresu Y
+    buforObiektu.push_back({t, w, y, u});
 
-    // Aktualizuj zakres Y przyrostowo
     if (w < zakresMain.minVal) { zakresMain.minVal = w; zakresMain.brudny = true; }
     if (w > zakresMain.maxVal) { zakresMain.maxVal = w; zakresMain.brudny = true; }
     if (y < zakresMain.minVal) { zakresMain.minVal = y; zakresMain.brudny = true; }
     if (y > zakresMain.maxVal) { zakresMain.maxVal = y; zakresMain.brudny = true; }
 
-    // Oś X
-    if (aktualnaSzerokoscOkna < doceloweOknoCzasowe)
-        aktualnaSzerokoscOkna = std::min(doceloweOknoCzasowe, aktualnaSzerokoscOkna + 0.2);
-    else if (aktualnaSzerokoscOkna > doceloweOknoCzasowe)
-        aktualnaSzerokoscOkna = std::max(doceloweOknoCzasowe, aktualnaSzerokoscOkna - 0.2);
-
-    double poczatek = (t > aktualnaSzerokoscOkna) ? (t - aktualnaSzerokoscOkna) : 0.0;
-    if (mainX) mainX->setRange(poczatek, t);
-
-    // Czyszczenie starych danych — tylko seriaZad i seriaRegulowana
-    if (seriaZad->count() > 0) {
-        double maxHistoria = ui->spinBoxOknoczasowe->maximum();
-        double prog = t - maxHistoria - MARGINES_BEZPIECZENSTWA;
-        int n = 0;
-        while (n < seriaZad->count() && seriaZad->at(n).x() < prog) ++n;
-        if (n > 0) {
-            seriaZad->removePoints(0, n);
-            seriaRegulowana->removePoints(0, std::min(n, seriaRegulowana->count()));
-            // Po usunięciu — rescan tylko tych dwóch serii, co 20 kroków
-            zakresMain.brudny = true;
-        }
-    }
-
-    if (k % 20 == 0 && zakresMain.brudny) {
-        zakresMain.minVal = 1e18; zakresMain.maxVal = -1e18;
-        for (int i = 0; i < seriaZad->count(); ++i) {
-            double v = seriaZad->at(i).y();
-            if (v < zakresMain.minVal) zakresMain.minVal = v;
-            if (v > zakresMain.maxVal) zakresMain.maxVal = v;
-        }
-        for (int i = 0; i < seriaRegulowana->count(); ++i) {
-            double v = seriaRegulowana->at(i).y();
-            if (v < zakresMain.minVal) zakresMain.minVal = v;
-            if (v > zakresMain.maxVal) zakresMain.maxVal = v;
-        }
-    }
-
-    if (mainY && zakresMain.brudny && k % 2 == 0) {
-        double margines = (zakresMain.maxVal - zakresMain.minVal) * 0.1;
-        if (margines < 0.01) margines = 1.0;
-        mainY->setRange(zakresMain.minVal - margines, zakresMain.maxVal + margines);
-        zakresMain.brudny = false;
-    }
+    if (u < zakresReg.minVal) { zakresReg.minVal = u; zakresReg.brudny = true; }
+    if (u > zakresReg.maxVal) { zakresReg.maxVal = u; zakresReg.brudny = true; }
 
     //if (Tryb != tryb::lokalny && k % 10 == 0)
     //    aktualizujStatusSieci();
@@ -379,14 +344,8 @@ void MainWindow::onKrokWykonany(double w, double y, double e,
     else        aktualnyCzasSymulacji += dt;
     double t = aktualnyCzasSymulacji;
 
-    // 1. Dodaj punkty (zawsze, każdy krok)
-    seriaZad->append(t, w);
-    seriaRegulowana->append(t, y);
-    seriaP->append(t, P);
-    seriaI->append(t, I);
-    seriaD->append(t, D);
-    seriaUchyb->append(t, e);
-    seriaRegulator->append(t, u);
+    // 1. Zbuforuj punkt
+    buforPunktow.push_back({t, w, y, e, u, P, I, D});
 
     // 2. Aktualizuj zakresy Y przyrostowo (bez skanowania serii)
     auto aktualizujY = [](ZakresY& z, std::initializer_list<double> vals) {
@@ -400,43 +359,107 @@ void MainWindow::onKrokWykonany(double w, double y, double e,
     aktualizujY(zakresUchyb, {e});
     aktualizujY(zakresReg,   {u});
 
-    // 3. Usuń stare punkty (jedno removePoints zamiast pętli remove(0))
-    czyscStareDaneSzybka(t);
-
-    // 4. Oś X — co krok (tania operacja, samo setRange)
-    if (aktualnaSzerokoscOkna < doceloweOknoCzasowe)
-        aktualnaSzerokoscOkna = std::min(doceloweOknoCzasowe,
-                                         aktualnaSzerokoscOkna + 0.2);
-    else if (aktualnaSzerokoscOkna > doceloweOknoCzasowe)
-        aktualnaSzerokoscOkna = std::max(doceloweOknoCzasowe,
-                                         aktualnaSzerokoscOkna - 0.2);
-
-    double poczatek = (t > aktualnaSzerokoscOkna)
-                          ? (t - aktualnaSzerokoscOkna) : 0.0;
-
-    if (mainX)  mainX->setRange(poczatek, t);
-    if (pidX)   pidX->setRange(poczatek, t);
-    if (uchybX) uchybX->setRange(poczatek, t);
-    if (regX)   regX->setRange(poczatek, t);
-
-    // 5. Oś Y — co 2 kroki i tylko gdy dane się zmieniły
-    if (k % 2 == 0) {
-        auto zastosujY = [](QValueAxis* os, ZakresY& z) {
-            if (!os || !z.brudny) return;
-            double margines = (z.maxVal - z.minVal) * 0.1;
-            if (margines < 0.01) margines = 1.0;
-            os->setRange(z.minVal - margines, z.maxVal + margines);
-            z.brudny = false;
-        };
-        zastosujY(mainY,  zakresMain);
-        zastosujY(pidY,   zakresPid);
-        zastosujY(uchybY, zakresUchyb);
-        zastosujY(regY,   zakresReg);
-    }
-
-    // 6. Status sieci
+    // 3. Status sieci
     //if (Tryb != tryb::lokalny)
     //   aktualizujStatusSieci();
+}
+
+void MainWindow::odswiezWykresy()
+{
+    // Tryb lokalny / regulator: pełny komplet wykresów, zbuforowany w onKrokWykonany
+    if (!buforPunktow.empty())
+    {
+        QList<QPointF> zad, reg, p, i, d, uchyb, ster;
+        for (const auto& pkt : buforPunktow) {
+            zad.append(QPointF(pkt.t, pkt.w));
+            reg.append(QPointF(pkt.t, pkt.y));
+            p.append(QPointF(pkt.t, pkt.P));
+            i.append(QPointF(pkt.t, pkt.I));
+            d.append(QPointF(pkt.t, pkt.D));
+            uchyb.append(QPointF(pkt.t, pkt.e));
+            ster.append(QPointF(pkt.t, pkt.u));
+        }
+
+        // Jedno dodanie punktów zamiast osobnego append() na każdy takt
+        seriaZad->append(zad);
+        seriaRegulowana->append(reg);
+        seriaP->append(p);
+        seriaI->append(i);
+        seriaD->append(d);
+        seriaUchyb->append(uchyb);
+        seriaRegulator->append(ster);
+
+        double t = buforPunktow.back().t;
+        buforPunktow.clear();
+
+        // Usuń stare punkty (jedno removePoints zamiast pętli remove(0))
+        czyscStareDaneSzybka(t);
+
+        // Oś X
+        if (aktualnaSzerokoscOkna < doceloweOknoCzasowe)
+            aktualnaSzerokoscOkna = std::min(doceloweOknoCzasowe,
+                                             aktualnaSzerokoscOkna + 0.2);
+        else if (aktualnaSzerokoscOkna > doceloweOknoCzasowe)
+            aktualnaSzerokoscOkna = std::max(doceloweOknoCzasowe,
+                                             aktualnaSzerokoscOkna - 0.2);
+
+        double poczatek = (t > aktualnaSzerokoscOkna)
+                              ? (t - aktualnaSzerokoscOkna) : 0.0;
+
+        if (mainX)  mainX->setRange(poczatek, t);
+        if (pidX)   pidX->setRange(poczatek, t);
+        if (uchybX) uchybX->setRange(poczatek, t);
+        if (regX)   regX->setRange(poczatek, t);
+
+        // Oś Y - liczona na nowo z punktow realnie widocznych w oknie
+        dopasujSkalePionowa(mainY,  {seriaZad, seriaRegulowana});
+        dopasujSkalePionowa(pidY,   {seriaP, seriaI, seriaD});
+        dopasujSkalePionowa(uchybY, {seriaUchyb});
+        dopasujSkalePionowa(regY,   {seriaRegulator});
+    }
+
+    // Tryb obiektu: wartosc zadana, regulowana i sterowanie
+    if (!buforObiektu.empty())
+    {
+        QList<QPointF> zad, reg, ster;
+        for (const auto& pkt : buforObiektu) {
+            zad.append(QPointF(pkt.t, pkt.w));
+            reg.append(QPointF(pkt.t, pkt.y));
+            ster.append(QPointF(pkt.t, pkt.u));
+        }
+
+        seriaZad->append(zad);
+        seriaRegulowana->append(reg);
+        seriaRegulator->append(ster);
+
+        double t = buforObiektu.back().t;
+        buforObiektu.clear();
+
+        if (aktualnaSzerokoscOkna < doceloweOknoCzasowe)
+            aktualnaSzerokoscOkna = std::min(doceloweOknoCzasowe, aktualnaSzerokoscOkna + 0.2);
+        else if (aktualnaSzerokoscOkna > doceloweOknoCzasowe)
+            aktualnaSzerokoscOkna = std::max(doceloweOknoCzasowe, aktualnaSzerokoscOkna - 0.2);
+
+        double poczatek = (t > aktualnaSzerokoscOkna) ? (t - aktualnaSzerokoscOkna) : 0.0;
+        if (mainX) mainX->setRange(poczatek, t);
+        if (regX)  regX->setRange(poczatek, t);
+
+        // Czyszczenie starych danych
+        if (seriaZad->count() > 0) {
+            double maxHistoria = aktualnaSzerokoscOkna;
+            double prog = t - maxHistoria - MARGINES_BEZPIECZENSTWA;
+            int n = 0;
+            while (n < seriaZad->count() && seriaZad->at(n).x() < prog) ++n;
+            if (n > 0) {
+                seriaZad->removePoints(0, n);
+                seriaRegulowana->removePoints(0, std::min(n, seriaRegulowana->count()));
+                seriaRegulator->removePoints(0, std::min(n, seriaRegulator->count()));
+            }
+        }
+
+        dopasujSkalePionowa(mainY, {seriaZad, seriaRegulowana});
+        dopasujSkalePionowa(regY,  {seriaRegulator});
+    }
 }
 
 void MainWindow::wyczyscWykresy()
@@ -448,6 +471,10 @@ void MainWindow::wyczyscWykresy()
     seriaD->clear();
     seriaUchyb->clear();
     seriaRegulator->clear();
+
+    // Odrzuć punkty czekające na dorysowanie
+    buforPunktow.clear();
+    buforObiektu.clear();
 
     aktualnyCzasSymulacji = 0.0;
 
@@ -699,62 +726,27 @@ void MainWindow::on_Reset_i_clicked()
 void MainWindow::on_START_Button_clicked()
 {
     symulator.start();
+
+    if(Tryb == regulator && client)
+        wyslijConfigPacket();
 }
 
 void MainWindow::on_STOP_Bttun_clicked()
 {
     symulator.stop();
+
+    if(Tryb == regulator && client)
+        wyslijConfigPacket();
 }
 
 void MainWindow::on_RESET_Button_clicked()
 {
     symulator.reset();
-
-
-    symulator.setPID_Kp(0.5);
-    ui->spinBOX_WzmocK->setValue(0.5);
-    symulator.setPID_Ti(5.0);
-    ui->spinBOX_Ti->setValue(5.0);
-    symulator.setPID_Td(0.2);
-    ui->spinBOX_Td->setValue(0.2);
-
-    symulator.setGeneratorA(1.0);
-    ui->spinBOX_Amplituda->setValue(1.0);
-    symulator.setGeneratorTRZ(3.0);
-    ui->spinBOX_Czstotliwosc->setValue(3.0);
-    symulator.setGeneratorTT(50);
-    ui->spinBOX_Interwal->setValue(50);
-    symulator.setGeneratorS(0.0);
-    ui->SpinBox_Stala->setValue(0.0);
-    symulator.setGeneratorP(0.5);
-    ui->spinBox_Wypelnienie->setValue(0.5);
-
-    symulator.setInterwalMs(50);
-    symulator.setPID_T(0.2);
-
-    symulator.setPID_TypCalki(RegulatorPID::Zew);
-    ui->radio_przed->setChecked(true);
-    ui->radio_pod->setChecked(false);
-
-    aktualnyWektorA = {-0.4};
-    aktualnyWektorB = {0.6};
-    aktualneOpoznienie = 1;
-    aktualnySzum = 0.0;
-    symulator.setARX(aktualnyWektorA, aktualnyWektorB, aktualneOpoznienie, aktualnySzum);
-    arx_uMax = 10.0;
-    arx_uMin = -10.0;
-    arx_yMax = 10.0;
-    arx_yMin = -10.0;
-    symulator.setPID_Umin(-10.0);
-    symulator.setPID_Umax(10.0);
-    symulator.setARX_Ymax(10.0);
-    symulator.setARX_Ymin(-10.0);
-    symulator.setPID_Ograniczenia(true);
-
     wyczyscWykresy();
+
     if(Tryb == regulator && client)
     {
-        wyslijConfigPacket();
+        wyslijConfigPacket(true); // poinformuj instancję obiektu o resecie
     }
 }
 
@@ -788,7 +780,7 @@ void MainWindow::ustawARXDane(const std::vector<double> &a,
     symulator.setPID_Ograniczenia(aktywne);
 
 
-    if(Tryb == regulator && client)
+    if((Tryb == regulator && client) || (Tryb == obiekt && server))
         wyslijConfigPacket();
 }
 
@@ -804,7 +796,7 @@ void MainWindow::on_Konf_ARX_Button_clicked()
     arxwindow->raise();
     arxwindow->activateWindow();
 
-    if(Tryb == regulator && client) //IDK czy dobre miejsce
+    if(Tryb == regulator && client)
     {
         wyslijConfigPacket();
     }
@@ -842,7 +834,7 @@ void MainWindow::on_Zapisz_Button_clicked()
 }
 
 /*
-void MainWindow::on_Wczytaj_Button_clicked() //stara wersja do usuniecia po przejsciu checklisty calej
+void MainWindow::on_Wczytaj_Button_clicked() //stara wersja do usuniecia po przejsciu checklisty calej. checklista ok ale w finalnej wersji do usuneicia
 {
     QString sciezka = QFileDialog::getOpenFileName(this, "Wczytaj konfigurację", "", "JSON (*.json)");
         if (sciezka.isEmpty()) return;
@@ -962,6 +954,15 @@ void MainWindow::on_TrybSieciowy_Button_clicked()
 {
     if(Tryb == lokalny)
     {
+        // wejscie w tryb sieciowy przy dzialajacej symulacji miesza lokalna petle i dzialjacy tick wiec zablokowanie takiej mozliwosci (najszybsze rozwiazanie)
+        // petle (Tick) z krokami przychodzacymi z sieci na tych samych danych
+        if (symulator.czysymuluj())
+        {
+            QMessageBox::information(this, "Tryb sieciowy",
+                "Zatrzymaj symulację (STOP) przed przełączeniem w tryb sieciowy.");
+            return;
+        }
+
         QMessageBox msgBox;
         msgBox.setWindowTitle("Wybór trybu");
         msgBox.setText("Wybierz tryb pracy aplikacji:");
@@ -994,6 +995,9 @@ void MainWindow::on_TrybSieciowy_Button_clicked()
 
         if(reply == QMessageBox::Yes)
         {
+            bool wznowSymulacje = (Tryb == obiekt) && regulatorAktywny;
+
+            symulator.setTrybSieciowyRegulator(false);
 
             if(server)
             {
@@ -1007,8 +1011,12 @@ void MainWindow::on_TrybSieciowy_Button_clicked()
                 client = nullptr;
             }
 
+            bylPolaczony = false;
 
             trybLokalny();
+
+            if (wznowSymulacje)
+                symulator.start();
         }
     }
 }
@@ -1033,6 +1041,13 @@ void MainWindow::uruchomSerwer()
 
     server = new Server(port, this);
 
+    // swiezy start sesji wiec ustawienia domyslne
+    bylPolaczony = false;
+    regulatorAktywny = false;
+
+    symulator.reset();
+    wyczyscWykresy();
+
     //statusPolaczeniaBrak(); do usuniecia raczej
     aktualizujStatusSieci();
 
@@ -1042,12 +1057,11 @@ void MainWindow::uruchomSerwer()
     connect(server, &Server::disconnected,this, &MainWindow::aktualizujStatusSieci);
 
     connect(server, &Server::configReceived, this, &MainWindow::onConfigPacketReceivedServer);
-    // update wykresow dla obiektu
+    // symulator zyje przez caly czas dzialania programu, wiec przy kolejnym wejsciu w tryb obiektu to polaczenie sie powtarza i wykres przyspieszal - stad disconnect
+    disconnect(&symulator, &SymulatorUAR::krokObiektu, this, &MainWindow::onKrokObiektu);
     connect(&symulator, &SymulatorUAR::krokObiektu,this, &MainWindow::onKrokObiektu);
-    //connect(&symulator, &SymulatorUAR::krokWykonany, this, &MainWindow::wyslijStepPacket); IDK to nie bo wysyla cale dane a obiekt ma lokalnie se liczyc
-    // IDK dodane aby wyliczac pomiedzy oboma info
     connect(server,&Server::sterowanieReceived,this,&MainWindow::onSterowanieReceived);
-    //IDK zmiana sposobu liczenia w symulatorze
+
     symulator.setTrybSieciowyRegulator(false);
 
     QMessageBox::information(
@@ -1059,7 +1073,6 @@ void MainWindow::uruchomSerwer()
     trybObiektu();
 }
 
-//IDK wyliczanie glownego sterowania
 void MainWindow::onSterowanieReceived(quint32 seq , double u, double w)
 {
     //qDebug() << "MAINWINDOW: liczę obiekt dla u =" << u;
@@ -1109,23 +1122,33 @@ void MainWindow::uruchomKlienta()
 
     client = new Client(ip, port, this);
 
+    // swiezy start sesji zerowanie do domyslnych
+    bylPolaczony = false;
+
+    symulator.reset();
+    wyczyscWykresy();
+
     //statusPolaczeniaBrak();
     aktualizujStatusSieci();
 
     //connect(client, &Client::connectedOk,this, &MainWindow::statusPolaczeniaOK);
     //
     connect(client, &Client::connectedOk,this, &MainWindow::aktualizujStatusSieci);
+    // zeby oba urzadzenia liczyly czas od tego samego zera
+    connect(client, &Client::connectedOk, this, [this](){ wyslijConfigPacket(true); });
     connect(client, &Client::disconnected,this, &MainWindow::aktualizujStatusSieci);
 
 
     //connect(client, &Client::stepReceived,this, &MainWindow::onStepPacketReceivedClient); IDK to raczej nie potrzebne
-    //IDK
+    // zeby zapobiedz duplikowaniu symulacji
+    disconnect(&symulator, &SymulatorUAR::wyslijSterowanie, this, &MainWindow::wyslijSterowanie);
     connect(&symulator, &SymulatorUAR::wyslijSterowanie, this, &MainWindow::wyslijSterowanie);
-    //IDK zmiana sposobu wyliczania symulacji w symulatorze
     symulator.setTrybSieciowyRegulator(true);
-    //IDK
     connect(client, &Client::outputReceived,this, &MainWindow::onOutputReceived);
+    // odbior konfiguracji ARX przeslanej przez obiekt (dla symulacji w tle)
+    connect(client, &Client::configReceived,this, &MainWindow::onConfigPacketReceivedClient);
 
+    disconnect(&symulator, &SymulatorUAR::timeoutSieci, this, &MainWindow::onTimeoutSieci);
     connect(&symulator, &SymulatorUAR::timeoutSieci,this, &MainWindow::onTimeoutSieci);
 
     trybRegulatora();
@@ -1134,6 +1157,7 @@ void MainWindow::uruchomKlienta()
 void MainWindow::trybLokalny()
 {
     Tryb = lokalny;
+    trybDegradacjiSieci = false;
 
     ui->TrybSieciowy_Button->setText("TRYB SIECIOWY");
     ui->RESET_Button->setEnabled(true);
@@ -1233,7 +1257,6 @@ void MainWindow::aktualizujStatusSieci()
     ui->StatusPolaczenia_Label->show();
 
     bool polaczono = false;
-    bool polaczonoraz = false;
 
     // SERVER
     if(server && server->getSocket())
@@ -1250,7 +1273,7 @@ void MainWindow::aktualizujStatusSieci()
     // BRAK POŁĄCZENIA
     if(!polaczono)
     {
-        if(!polaczonoraz)
+        if(!bylPolaczony)
         {
             ui->StatusPolaczenia_Label->setText("Brak połączenia");
             ui->StatusPolaczenia_Label->setStyleSheet(
@@ -1262,7 +1285,10 @@ void MainWindow::aktualizujStatusSieci()
         }
         else
         {
-            trybLokalny();
+            // zerwanie polaczenia
+            bylPolaczony = false;
+            // zeby przeslac info czy symulacja byla start
+            bool wznowSymulacje = (Tryb == obiekt) && regulatorAktywny;
 
             symulator.setTrybSieciowyRegulator(false);
 
@@ -1278,18 +1304,34 @@ void MainWindow::aktualizujStatusSieci()
                 client = nullptr;
             }
 
+            trybLokalny();
+
+            if (wznowSymulacje)
+                symulator.start();
+
             QMessageBox::warning(this, "Połączenie sieciowe",
                                  "Połączenie zostało zerwane.\n"
                                  "Powrót do trybu lokalnego.");
-
-            polaczonoraz = false;
         }
 
         return;
     }
 
-    // OPÓŹNIENIA
-    if(!symulator.czyPakietyNaCzas())
+    bylPolaczony = true;
+
+    // OPÓŹNIENIA lampka
+    if (!trybDegradacjiSieci)
+    {
+        if (symulator.getLiczbaSpoznien() >= PROG_OPOZNIEN_POMARANCZOWY)
+            trybDegradacjiSieci = true;
+    }
+    else
+    {
+        if (symulator.getLiczbaDobrychPodRzad() >= PROG_POPRAWY_ZIELONY)
+            trybDegradacjiSieci = false;
+    }
+
+    if (trybDegradacjiSieci)
     {
         ui->StatusPolaczenia_Label->setText("Połączono - opóźnienia");
         ui->StatusPolaczenia_Label->setStyleSheet(
@@ -1316,7 +1358,7 @@ void MainWindow::onStepPacketReceivedClient(const StepPacket& p)
 {
     onKrokWykonany(p.w, p.y, p.e, p.u, p.k, p.P, p.I, p.D);
 } //  prawdopodobnie bedzie nie potrzebne pozniej
-//IDK
+
 void MainWindow::onOutputReceived(quint32 seq ,double y)
 {
     if (seq != wyslanySeq) {
@@ -1338,25 +1380,27 @@ void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
     symulator.setPID_Kp(c.Kp);
     symulator.setPID_Ti(c.Ti);
     symulator.setPID_Td(c.Td);
+    symulator.setPID_TypCalki(c.typCalki);
 
     ui->spinBOX_WzmocK->setValue(c.Kp);
     ui->spinBOX_Ti->setValue(c.Ti);
     ui->spinBOX_Td->setValue(c.Td);
+    ui->radio_przed->setChecked(c.typCalki == RegulatorPID::Zew);
+    ui->radio_pod->setChecked(c.typCalki == RegulatorPID::Wew);
 
+    symulator.setGeneratorTryb(c.trybGeneratora);
     symulator.setGeneratorA(c.A);
     symulator.setGeneratorTRZ(c.TRZ);
     symulator.setGeneratorP(c.P);
     symulator.setGeneratorS(c.S);
     //symulator.setGeneratorTT(c.TT); powielone pozniej?
 
+    ui->Sin_Button->setChecked(c.trybGeneratora == GeneratorSygnalu::SINUS);
+    ui->Square_Button->setChecked(c.trybGeneratora == GeneratorSygnalu::PROSTOKAT);
     ui->spinBOX_Amplituda->setValue(c.A);
     ui->spinBOX_Czstotliwosc->setValue(c.TRZ);
     ui->spinBox_Wypelnienie->setValue(c.P);
     ui->SpinBox_Stala->setValue(c.S);
-
-    symulator.setARX(c.arxA, c.arxB, c.opoznienie, c.szum);
-    symulator.setARX_Ograniczenia(c.ograniczenia);
-    symulator.setPID_Ograniczenia(c.ograniczenia);
 
     // te same 3 operacje co w editingFinished narazie brak lepszego pomyslu poza powieleniem ich
     symulator.setGeneratorTT(c.interwalMs);
@@ -1382,6 +1426,36 @@ void MainWindow::onConfigPacketReceivedServer(const ConfigPacket& c)
         uchybX->setRange(minX, maxX);
         regX->setRange(minX, maxX);
     }
+
+    // Reset zainicjowany po stronie regulatora
+    if (c.resetHistorii) {
+        symulator.reset();
+        wyczyscWykresy();
+    }
+
+    // zapamietaj czy regulator aktualnie ma wcisniety start
+    regulatorAktywny = c.symulacjaAktywna;
+}
+
+// Obiekt przesyla regulatorowi swoja aktualna konfiguracje ARX
+void MainWindow::onConfigPacketReceivedClient(const ConfigPacket& c)
+{
+    aktualnyWektorA = c.arxA;
+    aktualnyWektorB = c.arxB;
+    aktualneOpoznienie = c.opoznienie;
+    aktualnySzum = c.szum;
+    arx_uMin = c.uMin;
+    arx_uMax = c.uMax;
+    arx_yMin = c.yMin;
+    arx_yMax = c.yMax;
+    arx_ograniczenia = c.ograniczenia;
+
+    symulator.setARX(c.arxA, c.arxB, c.opoznienie, c.szum);
+    symulator.setARX_Umin(c.uMin);
+    symulator.setARX_Umax(c.uMax);
+    symulator.setARX_Ymin(c.yMin);
+    symulator.setARX_Ymax(c.yMax);
+    symulator.setARX_Ograniczenia(c.ograniczenia);
 }
 
 void MainWindow::wyslijSterowanie(double u, double w)
@@ -1392,7 +1466,7 @@ void MainWindow::wyslijSterowanie(double u, double w)
     client->sendControl(wyslanySeq, u, w);
 }
 
-void MainWindow::wyslijConfigPacket()
+void MainWindow::wyslijConfigPacket(bool resetHistorii)
 {
     RegulatorPID::LiczCalk trybCalki;
     if(ui->radio_pod->isChecked())
@@ -1407,14 +1481,14 @@ void MainWindow::wyslijConfigPacket()
         ui->spinBOX_WzmocK->value(),
         ui->spinBOX_Ti->value(),
         ui->spinBOX_Td->value(),
-        trybCalki, //dodany tryb calki
-        arx_uMin, arx_uMax, //zamienione placeholdery min i max
+        trybCalki,
+        arx_uMin, arx_uMax,
         ui->spinBOX_Amplituda->value(),
         ui->spinBOX_Czstotliwosc->value(),
         ui->spinBox_Wypelnienie->value(),
         ui->SpinBox_Stala->value(),
         ui->spinBOX_Interwal->value(),
-        symulator.getGeneratorTryb(), //zamieniony placeholder trybu generatora
+        symulator.getGeneratorTryb(),
         aktualnyWektorA,
         aktualnyWektorB,
         aktualneOpoznienie,
@@ -1423,12 +1497,14 @@ void MainWindow::wyslijConfigPacket()
         arx_yMin,
         arx_yMax,
         ui->spinBOX_Interwal->value(),
-        ui->spinBoxOknoczasowe->value()
+        ui->spinBoxOknoczasowe->value(),
+        resetHistorii,
+        symulator.czysymuluj()
         );
     if(client){
     client->sendConfig(c);
     }else if(server){
-        //przesyl arx aby lokalnie byly dane? FIX
+        server->sendConfig(c);
     }
 }
 

@@ -24,13 +24,14 @@ private:
     int k;//krok
     double w, e, u, y;//wartość zadana,uchyb regulacji,sygnał sterujący, wyjście obiektu
 
-    //IDK NA POTRZEBY TRYBU SIECIOWEGO
+    //NA POTRZEBY TRYBU SIECIOWEGO
     double ostatnieYsieciowe;
     bool oczekiwanieNaY;
     double ostatniePoprawneU;
     bool trybSieciowyRegulator;
     bool ostatniPakietNaCzas; // to wysylane z zewnatrz musi byc?
     int liczbaSpoznionychPakietow;
+    int liczbaDobrychPodRzad; // do lampki stanu polaczenia - ile kolejnych taktow z rzedu bylo na czas
     QElapsedTimer timerPakietu;
 
     // ZEGAR
@@ -54,11 +55,12 @@ public:
         , e(0.0)
         , u(0.0)
         , y(0.0)
-        , ostatnieYsieciowe(0.0) //IDK
-        , oczekiwanieNaY(false) //IDK
-        , trybSieciowyRegulator(false) //IDK
-        , ostatniPakietNaCzas(true) //IDK
-        , liczbaSpoznionychPakietow(0) //IDK
+        , ostatnieYsieciowe(0.0)
+        , oczekiwanieNaY(false)
+        , trybSieciowyRegulator(false)
+        , ostatniPakietNaCzas(true)
+        , liczbaSpoznionychPakietow(0)
+        , liczbaDobrychPodRzad(0)
         , symuluj(false)
         , interwalMs(200)
     {
@@ -85,6 +87,10 @@ public:
         stop();
         k = 0;
         w = e = u = y = 0.0;
+        ostatnieYsieciowe = 0.0;
+        ostatniPakietNaCzas = true;
+        liczbaSpoznionychPakietow = 0;
+        liczbaDobrychPodRzad = 0;
         uar.reset();
     }
 
@@ -148,6 +154,7 @@ public:
     //na potrzeby komunikacji sieciowej
     bool czyPakietyNaCzas() const { return ostatniPakietNaCzas;}
     int getLiczbaSpoznien() const {return liczbaSpoznionychPakietow; }
+    int getLiczbaDobrychPodRzad() const {return liczbaDobrychPodRzad; }
     void setCzyPakietNaCzas(bool p){ ostatniPakietNaCzas=p; }
     GeneratorSygnalu::Tryb getGeneratorTryb() const { return generator.getTryb(); }
 
@@ -166,7 +173,6 @@ public:
     double getI() const { return pid.I; }
     double getD() const { return pid.D; }
 
-    //IDK
     double symulujObiekt(double uSterujace)
     {
         y = arx.symuluj(uSterujace);
@@ -194,8 +200,16 @@ public:
 
         e = w - y;
 
+        /* lokalny generator+regulator licza "na sucho" w oparciu o realne y,
+        zeby ich pamiec (calka PID, faza generatora) byla aktualna na wypadek
+        powrotu do trybu lokalnego */
+        double wTla = generator.generuj(k);
+        double eTla = wTla - y;
+        pid.symuluj(eTla);
+        uar.ustawPoprzednieWyjscie(y);
+
         //emit krokWykonany(w,y,e,u,k,0.0,0.0,0.0);
-        emit krokObiektu(w, y, k);
+        emit krokObiektu(w, y, u, k);
 
         k++;
     }
@@ -204,9 +218,8 @@ signals:
     //emitowanie sygnałów dla GUI
     void krokWykonany(double w, double y, double e, double u, int k, double P, double I, double D);
 
-    //IDK
     void wyslijSterowanie(double u, double w);
-    void krokObiektu(double w, double y, int k);
+    void krokObiektu(double w, double y, double u, int k);
     // jezeli za duzo opoznien
     void timeoutSieci();
 
@@ -237,6 +250,7 @@ private slots:
             // Y wróciło na czas
             //ostatniPakietNaCzas = true;
             liczbaSpoznionychPakietow = 0;
+            liczbaDobrychPodRzad++;
             y = ostatnieYsieciowe;  // użyj świeżego Y które właśnie przyszło
         }
         else
@@ -244,8 +258,9 @@ private slots:
             // Y nie wróciło przed kolejnym tickiem - spóźnienie
             //ostatniPakietNaCzas = false;
             liczbaSpoznionychPakietow++;
+            liczbaDobrychPodRzad = 0;
 
-            if (liczbaSpoznionychPakietow >= 20)
+            if (liczbaSpoznionychPakietow > 5)
             {
                 emit timeoutSieci();
                 return;
@@ -260,6 +275,11 @@ private slots:
         w = generator.generuj(k);
         e = w - y;
         u = pid.symuluj(e);
+
+        /* lokalny model ARX regulatora zaopatrzamy prawdziwym, realnie
+        wyslanym sterowaniem, zeby jego bufory historii byly aktualne
+        na wypadek powrotu do trybu lokalnego */
+        arx.symuluj(u);
 
         // Wyślij sterowanie i zaznacz że czekamy na odpowiedź
         //oczekiwanieNaY = true;

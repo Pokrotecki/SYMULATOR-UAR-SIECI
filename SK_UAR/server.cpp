@@ -71,6 +71,24 @@ void Server::sendOutput(const OutputPacket& p)
     socket->write(buf);
 }
 
+// pozwala obiektowi odeslac regulatorowi swoja aktualna konfiguracje na potrzeby symulacji w tle
+void Server::sendConfig(const ConfigPacket& c)
+{
+    if (!socket) return;
+
+    QByteArray buf;
+    QDataStream out(&buf, QIODevice::WriteOnly);
+
+    out << quint32(0);
+    out << quint16(2);   // typ = ConfigPacket
+    out << c;
+
+    out.device()->seek(0);
+    out << quint32(buf.size() - sizeof(quint32));
+
+    socket->write(buf);
+}
+
 void Server::onReadyRead()
 {
     buffer.append(socket->readAll());

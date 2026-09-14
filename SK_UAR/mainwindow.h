@@ -60,14 +60,13 @@ private slots:
     void on_SpinBox_Stala_editingFinished();
     void on_spinBoxOknoczasowe_editingFinished();
     //sieciowe
-    void wyslijConfigPacket();
+    void wyslijConfigPacket(bool resetHistorii = false);
     void wyslijStepPacket(double w, double y, double e, double u, int k, double P, double I, double D);
     void onTimeoutSieci();
-    //IDK na potrzeby wymiany liczenia jednego sygnalu
     void onSterowanieReceived(quint32 seq, double u, double w);
     void onOutputReceived(quint32 seq, double y);
     void czyscStareDaneSzybka(double aktualnyCzas);
-    void onKrokObiektu(double w, double y, int k);
+    void onKrokObiektu(double w, double y, double u, int k);
 
     //  Główny slot odbierający dane z symulatora
     void onKrokWykonany(double w, double y, double e, double u, int k, double P, double I, double D);
@@ -97,8 +96,17 @@ private:
 
     quint32 wyslanySeq = 0;  // seq który został wysłany
     quint32 licznikSpoznien = 0;
-    static const int MAX_SPOZNIEN = 10;  // po 4 z rzędu - tryb lokalny
     bool pakietNaCzas = true;
+
+    // lampka opoznien
+    static const int PROG_OPOZNIEN_POMARANCZOWY = 1;
+    static const int PROG_POPRAWY_ZIELONY = 10;
+    bool trybDegradacjiSieci = false;
+
+    // do wykrywania faktycznego zerwania polaczenia (przejscie polaczono->rozlaczono)
+    bool bylPolaczony = false;
+    // stan pracy regulatora (start/stop) przeslany w configu - potrzebny obiektowi, zeby wiedziec czy po powrocie do trybu lokalnego wznowic symulacje, czy nie
+    bool regulatorAktywny = false;
     struct ZakresY {
         double minVal =  1e18;
         double maxVal = -1e18;
@@ -128,6 +136,21 @@ private:
     double doceloweOknoCzasowe;
     double aktualnyCzasSymulacji;
 
+    // Bufor punktów czekających na odrysowanie. Rysowanie wykresu jest odseparowane
+    // od taktu symulacji/sieci, zeby przy krotkich interwalach GUI
+    // mialo czas na obsluge gniazda sieciowego zamiast rysowac wykres co kazdy takt
+    struct PunktBufora {
+        double t, w, y, e, u, P, I, D;
+    };
+    std::vector<PunktBufora> buforPunktow;
+
+    struct PunktObiektu {
+        double t, w, y, u;
+    };
+    std::vector<PunktObiektu> buforObiektu;
+
+    QTimer wykresTimer;
+
     // Dane ARX
     std::vector<double> aktualnyWektorA;
     std::vector<double> aktualnyWektorB;
@@ -145,6 +168,7 @@ private:
     //  Funkcje pomocnicze
     void wyczyscWykresy();
     void dopasujSkalePionowa(QValueAxis *osY, QList<QLineSeries*> serie);
+    void odswiezWykresy();
 
 
     void aktualizujZakresOsiX(double krokAnimacji, double wymaganeOkno, double aktualnyCzas);
@@ -166,6 +190,7 @@ private:
 
     void onStepPacketReceivedClient(const StepPacket& p);
     void onConfigPacketReceivedServer(const ConfigPacket& c);
+    void onConfigPacketReceivedClient(const ConfigPacket& c);
 
     void wyslijSterowanie(double u, double w);
 };

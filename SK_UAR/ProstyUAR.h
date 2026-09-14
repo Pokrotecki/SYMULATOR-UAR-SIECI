@@ -26,6 +26,9 @@ public:
         obiekt.reset();
     }
 
+    // na potrzeby symulacji w tle, pozwala zsynchronizowac pamiec poprzedniego wyjscia z realnym y, gdy krok liczony jest poza krok()/symuluj()
+    void ustawPoprzednieWyjscie(double y) { wartwyjsc_poprzedni = y; }
+
     void krok(double &generator,
               double &uchyb,
               double &PID,

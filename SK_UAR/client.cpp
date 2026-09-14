@@ -10,6 +10,8 @@ Client::Client(const QString& host, quint16 port, QObject* parent)
     connect(&socket, &QTcpSocket::connected,
             this, [this]()
             {
+                // przeniesone na dopiero po polaczeniu, moglo wczesniej powodowac opoznienia
+                socket.setSocketOption(QAbstractSocket::LowDelayOption, 1);
                 qDebug() << "KLIENT: Połączono z serwerem!";
                 emit connectedOk();
             });
@@ -28,8 +30,6 @@ Client::Client(const QString& host, quint16 port, QObject* parent)
             });
 
     socket.connectToHost(host, port);
-
-    socket.setSocketOption(QAbstractSocket::LowDelayOption, 1);
 }
 
 void Client::sendConfig(const ConfigPacket& c)
@@ -75,6 +75,11 @@ void Client::onReadyRead()
             in >> p;
             emit stepReceived(p);
         }
+        if (type == 2) {
+            ConfigPacket c;
+            in >> c;
+            emit configReceived(c);
+        }
         if (type == 4)
         {
             OutputPacket p;
@@ -85,7 +90,6 @@ void Client::onReadyRead()
     }
 }
 
-//IDK
 void Client::sendControl(quint32 seq, double u, double w)
 {
     QByteArray buf;

@@ -4,8 +4,6 @@
 class RegulatorPID
 {
 public:
-    //tak bylo
-    //enum LiczCalk { PROSTOKATNY, Wew, Zew };//tryb metody obliczania całki
     enum LiczCalk { Wew, Zew };
 
 private:
