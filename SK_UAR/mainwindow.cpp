@@ -1469,7 +1469,7 @@ void MainWindow::wyslijSterowanie(double u, double w)
 void MainWindow::wyslijConfigPacket(bool resetHistorii)
 {
     RegulatorPID::LiczCalk trybCalki;
-    if(ui->radio_pod->isChecked())
+    if(ui->radio_przed->isChecked())
     {
         trybCalki = RegulatorPID::Zew;
     }
