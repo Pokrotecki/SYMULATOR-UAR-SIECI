@@ -1524,7 +1524,7 @@ void MainWindow::onTimeoutSieci()
     trybLokalny();
 
     QMessageBox::critical(this, "Błąd sieci",
-                          "Brak odpowiedzi przez 4 takty z rzędu.\n"
+                          "Brak odpowiedzi przez 5 taktów z rzędu.\n"
                           "Symulacja kontynuowana w trybie lokalnym.");
 }
 
