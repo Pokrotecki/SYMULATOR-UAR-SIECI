@@ -4,6 +4,7 @@
 
 #include <QTcpSocket>
 #include <QObject>
+#include <QTimer>
 #include "StepPacket.h"
 #include "ConfigPacket.h"
 
@@ -31,10 +32,15 @@ signals:
 
 private slots:
     void onReadyRead();
+    // ponawia connectToHost, gdy serwer jeszcze nie sluchal w chwili pierwszej proby
+    void probujPolaczycPonownie();
 
 private:
     QTcpSocket socket;
     QByteArray buffer;
+    QString host;
+    quint16 port;
+    QTimer retryTimer;
 };
 
 #endif // CLIENT_H
