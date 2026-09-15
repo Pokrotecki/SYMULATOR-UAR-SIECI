@@ -2,7 +2,7 @@
 #include <QDebug>
 
 Client::Client(const QString& host, quint16 port, QObject* parent)
-    : QObject(parent), host(host), port(port)
+    : QObject(parent)
 {
     connect(&socket, &QTcpSocket::readyRead,
             this, &Client::onReadyRead);
@@ -10,8 +10,6 @@ Client::Client(const QString& host, quint16 port, QObject* parent)
     connect(&socket, &QTcpSocket::connected,
             this, [this]()
             {
-                retryTimer.stop(); // polaczono wiec wylaczyc timer ponawiajacy
-
                 // przeniesone na dopiero po polaczeniu, moglo wczesniej powodowac opoznienia
                 socket.setSocketOption(QAbstractSocket::LowDelayOption, 1);
                 qDebug() << "KLIENT: Połączono z serwerem!";
@@ -26,25 +24,12 @@ Client::Client(const QString& host, quint16 port, QObject* parent)
             });
 
     connect(&socket, &QTcpSocket::errorOccurred,
-            this, [this](QAbstractSocket::SocketError err)
+            [](QAbstractSocket::SocketError err)
             {
                 qDebug() << "KLIENT: Błąd połączenia:" << err;
-
-                // probuj ponownie, az sie uda albo user wroci do lokalnego
-                if (!retryTimer.isActive())
-                    retryTimer.start();
             });
 
-    retryTimer.setInterval(1500);
-    connect(&retryTimer, &QTimer::timeout, this, &Client::probujPolaczycPonownie);
-
     socket.connectToHost(host, port);
-}
-
-void Client::probujPolaczycPonownie()
-{
-    if (socket.state() == QAbstractSocket::UnconnectedState)
-        socket.connectToHost(host, port);
 }
 
 void Client::sendConfig(const ConfigPacket& c)
